@@ -37,11 +37,12 @@ func TestUpdateDependencies(t *testing.T) {
 	_ = drainStdout(t, stdout)
 	err = <-errors
 	require.Nilf(t, err, "failed to verify: %q", err)
+	require.Contains(t, lines, "[INFO] BUILD SUCCESS")
 }
 
 func TestGitPullRequest(t *testing.T) {
 	gitClient := gitop.GitClient{Dir: testRepo}
-	commit, err := gitClient.Commit("update-deps", "auto update dependencies")
+	commit, err := gitClient.CommitAndPush("update-deps", "auto update dependencies")
 	require.NotEmptyf(t, commit, "failed to commit: %q", err)
 }
 
