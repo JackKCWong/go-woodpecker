@@ -1,9 +1,9 @@
 package maven
 
 import (
+	"bufio"
 	"context"
-	"fmt"
-	"github.com/go-cmd/cmd"
+	"os/exec"
 	"path"
 )
 
@@ -21,36 +21,44 @@ func (m Maven) MvnVerify(ctx context.Context) (<-chan string, <-chan error) {
 }
 
 func (m Maven) mvnRun(ctx context.Context, goal string) (<-chan string, <-chan error) {
-	goalRun := cmd.NewCmdOptions(cmd.Options{
-		Streaming: true,
-	}, m.mvn(), goal, "verify")
-
-	goalRun.Dir = m.wd()
-	done := goalRun.Start()
 	errCh := make(chan error, 2)
+	goalRun := exec.CommandContext(ctx, m.mvn(), goal)
+	goalRun.Dir = m.wd()
+	stdoutPipe, err := goalRun.StdoutPipe()
+	if err != nil {
+		errCh <- err
+		return nil, errCh
+	}
 
+	err = goalRun.Start()
+	if err != nil {
+		errCh <- err
+		return nil, errCh
+	}
+
+	stdout := make(chan string, 1000)
 	go func() {
 		defer close(errCh)
+		defer close(stdout)
 
-		select {
-		case <-ctx.Done():
-			if ctx.Err() != nil {
-				errCh <- ctx.Err()
+		go func() {
+			scanner := bufio.NewScanner(stdoutPipe)
+			for scanner.Scan() {
+				stdout <- scanner.Text()
 			}
 
-			err := goalRun.Stop()
-			if err != nil {
-				errCh <- err
+			if scanner.Err() != nil {
+				errCh <- scanner.Err()
 			}
-		case status := <-done:
-			fmt.Printf("status: %v\n", status)
-			if status.Error != nil {
-				errCh <- status.Error
-			}
+		}()
+
+		err := goalRun.Wait()
+		if err != nil {
+			errCh <- err
 		}
 	}()
 
-	return goalRun.Stdout, errCh
+	return stdout, errCh
 }
 
 func (m Maven) mvn() string {

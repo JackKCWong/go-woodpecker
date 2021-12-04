@@ -33,11 +33,10 @@ func TestUpdateDependencies(t *testing.T) {
 	require.Nilf(t, err, "failed to update deps: %q", err)
 	require.Contains(t, lines, "[INFO] BUILD SUCCESS")
 
-	//stdout, errors = mvn.MvnVerify(ctx)
-	//_ = drainStdout(t, stdout)
-	//err = <-errors
-	//require.Nilf(t, err, "failed to verify: %q", err)
-
+	stdout, errors = mvn.MvnVerify(ctx)
+	_ = drainStdout(t, stdout)
+	err = <-errors
+	require.Nilf(t, err, "failed to verify: %q", err)
 }
 
 func TestGitPullRequest(t *testing.T) {
