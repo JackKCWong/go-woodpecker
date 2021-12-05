@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
@@ -14,7 +13,8 @@ import (
 )
 
 type GitClient struct {
-	Dir string
+	Dir         string
+	AccessToken string
 }
 
 func (c GitClient) CommitAndPush(branchName, msg string) (string, error) {
@@ -78,21 +78,6 @@ func (c GitClient) CommitAndPush(branchName, msg string) (string, error) {
 	}
 
 	return h.String(), nil
-}
-
-func newBranch(repo *git.Repository, name string) error {
-	//b, err := repo.Branch(name)
-	//if err == nil {
-	//	// branch already exists
-	//	return fmt.Errorf("branch %s already exists", b.Name)
-	//}
-	//
-	err := repo.CreateBranch(&config.Branch{Name: name, Remote: "origin"})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func newSshPubKeyAuth() (*ssh.PublicKeys, error) {

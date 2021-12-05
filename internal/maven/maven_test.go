@@ -1,10 +1,8 @@
-package main
+package maven
 
 import (
 	"context"
 	"github.com/stretchr/testify/require"
-	"go-pacidae/internal/gitop"
-	"go-pacidae/internal/maven"
 	"os"
 	"testing"
 	"time"
@@ -20,7 +18,7 @@ func init() {
 }
 
 func TestUpdateDependencies(t *testing.T) {
-	mvn := maven.Maven{
+	mvn := Maven{
 		Pom: testRepo + "/pom.xml",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -38,12 +36,6 @@ func TestUpdateDependencies(t *testing.T) {
 	err = <-errors
 	require.Nilf(t, err, "failed to verify: %q", err)
 	require.Contains(t, lines, "[INFO] BUILD SUCCESS")
-}
-
-func TestGitPullRequest(t *testing.T) {
-	gitClient := gitop.GitClient{Dir: testRepo}
-	commit, err := gitClient.CommitAndPush("update-deps", "auto update dependencies")
-	require.NotEmptyf(t, commit, "failed to commit: %q", err)
 }
 
 func drainStdout(t *testing.T, stdout <-chan string) []string {
