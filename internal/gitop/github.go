@@ -31,7 +31,7 @@ func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, to
 
 	pr := github.NewPullRequest{
 		Title:               github.String("auto update dependencies"),
-		Body:                github.String("this request is created by Pacidae"),
+		Body:                github.String("this request is created by Woodpecker"),
 		Head:                github.String(fromBranch),
 		Base:                github.String(toBranch),
 		MaintainerCanModify: github.Bool(true),

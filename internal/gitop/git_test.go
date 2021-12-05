@@ -9,8 +9,8 @@ import (
 )
 
 func TestGitClient_CommitAndPush(t *testing.T) {
-	repo := os.Getenv("PACIDAE_REPO")
-	require.NotEmpty(t, repo, "PACIDAE_REPO is not defined")
+	repo := os.Getenv("WOODPECKER_REPO")
+	require.NotEmpty(t, repo, "WOODPECKER_REPO is not defined")
 
 	gitClient := GitClient{Dir: repo}
 	commit, err := gitClient.CommitAndPush("update-deps", "auto update dependencies")
@@ -18,8 +18,8 @@ func TestGitClient_CommitAndPush(t *testing.T) {
 }
 
 func TestGitHub_CreatePullRequest(t *testing.T) {
-	token := os.Getenv("PACIDAE_GITHUB_TOKEN")
-	require.NotEmpty(t, token, "PACIDAE_TOKEN is not defined")
+	token := os.Getenv("WOODPECKER_GITHUB_TOKEN")
+	require.NotEmpty(t, token, "WOODPECKER_TOKEN is not defined")
 
 	gh := GitHub{AccessToken: token}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)

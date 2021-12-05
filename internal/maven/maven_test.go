@@ -11,9 +11,9 @@ import (
 var testRepo string
 
 func init() {
-	testRepo = os.Getenv("PACIDAE_REPO")
+	testRepo = os.Getenv("WOODPECKER_REPO")
 	if testRepo == "" {
-		panic("need to specify a test repo with env var PACIDAE_REPO")
+		panic("need to specify a test repo with env var WOODPECKER_REPO")
 	}
 }
 
