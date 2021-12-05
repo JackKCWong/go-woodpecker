@@ -4,7 +4,7 @@ A naive idea to keep advancing project dependencies versions until the number of
 
 ## prerequisites
 
-* Maven v3.8.5
+* Maven v3.6.1+
 
 ## Maven projects
 
