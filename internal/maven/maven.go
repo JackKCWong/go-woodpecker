@@ -12,20 +12,24 @@ type Maven struct {
 	Pom string
 }
 
-func (m Maven) MvnDependencyUpdate(ctx context.Context) (<-chan string, <-chan error) {
+func (m Maven) DependencyUpdate(ctx context.Context) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "versions:use-next-releases")
 }
 
-func (m Maven) MvnVerify(ctx context.Context) (<-chan string, <-chan error) {
+func (m Maven) DependencyTree(ctx context.Context, outFile string) (<-chan string, <-chan error) {
+	return m.mvnRun(ctx, "dependency:tree", "-DoutputFile="+outFile)
+}
+
+func (m Maven) Verify(ctx context.Context) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "verify")
 }
 
-func (m Maven) mvnRun(ctx context.Context, goal string) (<-chan string, <-chan error) {
+func (m Maven) mvnRun(ctx context.Context, args ...string) (<-chan string, <-chan error) {
 	errCh := make(chan error, 2)
 	goalRun := cmd.NewCmdOptions(cmd.Options{
 		Buffered:  false,
 		Streaming: true,
-	}, m.mvn(), "--no-transfer-progress", goal)
+	}, m.mvn(), append([]string{"-B"}, args...)...)
 
 	goalRun.Dir = m.wd()
 	done := goalRun.Start()
