@@ -7,24 +7,28 @@ import (
 	"path"
 )
 
-type Maven struct {
+type Mvn struct {
 	Bin string
-	Pom string
+	POM string
 }
 
-func (m Maven) DependencyUpdate(ctx context.Context) (<-chan string, <-chan error) {
+func (m Mvn) DependencyUpdate(ctx context.Context) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "versions:use-next-releases")
 }
 
-func (m Maven) DependencyTree(ctx context.Context, outFile string) (<-chan string, <-chan error) {
+func (m Mvn) DependencyTree(ctx context.Context, outFile string) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "dependency:tree", "-DoutputFile="+outFile)
 }
 
-func (m Maven) Verify(ctx context.Context) (<-chan string, <-chan error) {
+func (m Mvn) VulnerabilityReport(ctx context.Context) (<-chan string, <-chan error) {
+	return m.mvnRun(ctx, "org.owasp:dependency-check-maven:check", "-DretireJsAnalyzerEnabled=false", "-DprettyPrint=true", "-Dformat=json")
+}
+
+func (m Mvn) Verify(ctx context.Context) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "verify")
 }
 
-func (m Maven) mvnRun(ctx context.Context, args ...string) (<-chan string, <-chan error) {
+func (m Mvn) mvnRun(ctx context.Context, args ...string) (<-chan string, <-chan error) {
 	errCh := make(chan error, 2)
 	goalRun := cmd.NewCmdOptions(cmd.Options{
 		Buffered:  false,
@@ -52,7 +56,7 @@ func (m Maven) mvnRun(ctx context.Context, args ...string) (<-chan string, <-cha
 	return goalRun.Stdout, errCh
 }
 
-func (m Maven) mvn() string {
+func (m Mvn) mvn() string {
 	if m.Bin != "" {
 		return m.Bin
 	}
@@ -60,14 +64,14 @@ func (m Maven) mvn() string {
 	return "mvn"
 }
 
-func (m Maven) wd() string {
-	if m.Pom == "" {
+func (m Mvn) wd() string {
+	if m.POM == "" {
 		panic("pom.xml not specified")
 	}
 
-	dir, file := path.Split(m.Pom)
+	dir, file := path.Split(m.POM)
 	if file != "pom.xml" {
-		panic(m.Pom + " is not a valid pom.xml")
+		panic(m.POM + " is not a valid pom.xml")
 	}
 
 	return dir

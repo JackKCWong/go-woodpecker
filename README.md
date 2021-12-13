@@ -19,3 +19,7 @@ Basically it simply does the following:
 * `git push --set-upstream=auto-update-deps`
 * create pull request
 
+
+## Caveats
+[ ] multi-modules project
+[ ] dependency suite (dependencies share the same version)

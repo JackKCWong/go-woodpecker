@@ -2,6 +2,7 @@ package maven
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
@@ -14,13 +15,13 @@ var testRepo string
 func init() {
 	testRepo = os.Getenv("WOODPECKER_REPO")
 	if testRepo == "" {
-		panic("need to specify a test repo with env var WOODPECKER_REPO")
+		testRepo = os.ExpandEnv("$HOME/Workspace/repos/mu-server")
 	}
 }
 
-func TestUpdateDependencies(t *testing.T) {
-	mvn := Maven{
-		Pom: testRepo + "/pom.xml",
+func TestMaven_UpdateDependencies(t *testing.T) {
+	mvn := Mvn{
+		POM: testRepo + "/pom.xml",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -40,8 +41,8 @@ func TestUpdateDependencies(t *testing.T) {
 }
 
 func TestMaven_DependencyTree(t *testing.T) {
-	mvn := Maven{
-		Pom: testRepo + "/pom.xml",
+	mvn := Mvn{
+		POM: testRepo + "/pom.xml",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -58,6 +59,33 @@ func TestMaven_DependencyTree(t *testing.T) {
 	require.Nil(t, err)
 	require.NotEmpty(t, tree)
 	t.Logf("dependency tree: %s", tree)
+}
+
+func TestMvn_VulnerabilityReport(t *testing.T) {
+	mvn := Mvn{
+		POM: testRepo + "/pom.xml",
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	stdout, errors := mvn.VulnerabilityReport(ctx)
+	_ = drainStdout(t, stdout)
+	err := <-errors
+	require.Nilf(t, err, "failed to run dependency:tree, error:%q", err)
+}
+
+func Test_FindVulnerabilities(t *testing.T) {
+	report, err := ioutil.ReadFile(testRepo + "/target/dependency-check-report.json")
+	require.Nil(t, err)
+
+	vr := &VulnerabilityReport{}
+	err = json.Unmarshal(report, vr)
+	require.Nil(t, err)
+
+	require.Greater(t, len(vr.Dependencies), 0, "expecting non-zero dependencies")
+
+	cohVuls := FindVulnerabilities(vr)
+	require.Greater(t, len(cohVuls), 0, "expecting non-zero Critical or High vulnerabilities")
 }
 
 func drainStdout(t *testing.T, stdout <-chan string) []string {
