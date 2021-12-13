@@ -47,6 +47,18 @@ func (vr *VulnerabilityReport) FillIn(tree *api.DependencyTree) {
 	for i, n := range tree.Nodes {
 		tree.Nodes[i].Vulnerabilities = convertVul(vuldb[n.ID])
 		tree.Nodes[i].PackageUrl = pdb[n.ID]
+		if len(tree.Nodes[i].Vulnerabilities) > 0 {
+			backfill(tree.Nodes, i)
+		}
+	}
+}
+
+func backfill(nodes []api.DependencyTreeNode, i int) {
+	for j := i; j > 0; j-- {
+		if nodes[j].Depth == 1 {
+			nodes[j].ShouldUpdate = true
+			break
+		}
 	}
 }
 

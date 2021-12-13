@@ -14,6 +14,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.AddCommand(vulTreeCmd)
 }
 

@@ -10,10 +10,12 @@ import (
 )
 
 var (
-	cCritical = color.New(color.FgRed, color.BgHiYellow).SprintFunc()
-	cHigh     = color.New(color.FgHiRed).SprintFunc()
-	cMedium   = color.New(color.FgHiYellow).SprintFunc()
-	cLow      = color.New(color.FgYellow).SprintFunc()
+	cCritical     = color.New(color.FgRed, color.BgHiYellow).SprintFunc()
+	cHigh         = color.New(color.FgHiRed).SprintFunc()
+	cMedium       = color.New(color.FgHiYellow).SprintFunc()
+	cLow          = color.New(color.FgYellow).SprintFunc()
+	cNode         = color.New(color.FgWhite).SprintFunc()
+	cShouldUpdate = color.New(color.FgHiWhite).Add(color.Underline, color.Bold).SprintFunc()
 )
 
 var vulTreeCmd = &cobra.Command{
@@ -22,6 +24,7 @@ var vulTreeCmd = &cobra.Command{
 	Aliases: []string{"ls"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		verbose, _ := cmd.Flags().GetBool("verbose")
+		link, _ := cmd.Flags().GetBool("link")
 		updater := maven.NewUpdater("pom.xml", maven.UpdaterOpts{
 			Verbose: verbose,
 		})
@@ -32,13 +35,20 @@ var vulTreeCmd = &cobra.Command{
 		}
 
 		for _, n := range tree.Nodes {
-			padding := strings.Repeat("  ", n.Depth)
-			nColor := color.WhiteString
 			if n.Scope == "test" {
 				continue
 			}
 
+			padding := strings.Repeat("  ", n.Depth)
+			nColor := cNode
 			prefix := ""
+			suffix := ""
+
+			if n.ShouldUpdate {
+				nColor = cShouldUpdate
+				suffix = "\t\t\t<-----\tupdate this"
+			}
+
 			switch {
 			case n.Depth == 1:
 				prefix = "+ "
@@ -46,7 +56,7 @@ var vulTreeCmd = &cobra.Command{
 				prefix = "- "
 			}
 
-			util.Printfln(os.Stdout, "%s%s%s", padding, prefix, nColor(n.ID))
+			util.Printfln(os.Stdout, "%s%s%s%s", padding, prefix, nColor(n.ID), suffix)
 			if len(n.Vulnerabilities) > 0 {
 				for _, v := range n.Vulnerabilities {
 					var vColor func(...interface{}) string
@@ -61,7 +71,12 @@ var vulTreeCmd = &cobra.Command{
 						vColor = cLow
 					}
 
-					util.Printfln(os.Stdout, "%s   * %s\t%s\t%s", padding, vColor(v.ID), vColor(v.Severity), v.CVEUrl)
+					util.Printfln(os.Stdout, "%s   * %s\t%s\t%s", padding,
+						vColor(v.ID), vColor(v.Severity),
+						map[bool]string{
+							true:  v.CVEUrl,
+							false: "",
+						}[link])
 				}
 			}
 		}
@@ -71,5 +86,5 @@ var vulTreeCmd = &cobra.Command{
 }
 
 func init() {
-	vulTreeCmd.Flags().BoolP("verbose", "v", false, "verbose output")
+	vulTreeCmd.Flags().BoolP("link", "l", false, "show ref links")
 }
