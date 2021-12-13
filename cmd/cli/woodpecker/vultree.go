@@ -9,6 +9,13 @@ import (
 	"strings"
 )
 
+var (
+	cCritical = color.New(color.FgRed, color.BgHiYellow).SprintFunc()
+	cHigh     = color.New(color.FgHiRed).SprintFunc()
+	cMedium   = color.New(color.FgHiYellow).SprintFunc()
+	cLow      = color.New(color.FgYellow).SprintFunc()
+)
+
 var vulTreeCmd = &cobra.Command{
 	Use:     "tree",
 	Short:   "Print dependency tree with CVEs",
@@ -42,19 +49,19 @@ var vulTreeCmd = &cobra.Command{
 			util.Printfln(os.Stdout, "%s%s%s", padding, prefix, nColor(n.ID))
 			if len(n.Vulnerabilities) > 0 {
 				for _, v := range n.Vulnerabilities {
-					var vColor func(string, ...interface{}) string
+					var vColor func(...interface{}) string
 					switch {
 					case v.CVSSv2Score >= 9.0 || v.CVSSv3Score >= 9.0:
-						vColor = color.HiRedString
+						vColor = cCritical
 					case v.CVSSv2Score >= 7.0 || v.CVSSv3Score >= 7.0:
-						vColor = color.RedString
+						vColor = cHigh
 					case v.CVSSv2Score >= 4.0 || v.CVSSv3Score >= 4.0:
-						vColor = color.YellowString
+						vColor = cMedium
 					default:
-						vColor = color.BlueString
+						vColor = cLow
 					}
 
-					util.Printfln(os.Stdout, "%s  * %s\t%s", padding, vColor(v.ID), vColor(v.Severity))
+					util.Printfln(os.Stdout, "%s   * %s\t%s\t%s", padding, vColor(v.ID), vColor(v.Severity), v.CVEUrl)
 				}
 			}
 		}

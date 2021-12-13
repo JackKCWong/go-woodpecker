@@ -36,7 +36,7 @@ func (vr *VulnerabilityReport) FillIn(tree *api.DependencyTree) {
 	vuldb := make(map[string][]Vulnerability)
 	pdb := make(map[string]string)
 
-	for _, d := range vr.HighOrCritical() {
+	for _, d := range vr.Dependencies {
 		for _, v := range d.Vulnerabilities {
 			gav := getMavenGAV(d.Packages[0].ID)
 			vuldb[gav] = append(vuldb[gav], v)
@@ -59,11 +59,15 @@ func convertVul(vulnerabilities []Vulnerability) []api.Vulnerability {
 			Descrption:  v.Description,
 			Source:      v.Source,
 			Severity:    v.Severity,
-			CVEUrl:      "",
+			CVEUrl:      "https://nvd.nist.gov/vuln/detail/" + v.Name,
 			CVSSv2Score: v.Cvssv2.Score,
 			CVSSv3Score: v.Cvssv3.BaseScore,
 		})
 	}
+
+	sort.SliceStable(r, func(i, j int) bool {
+		return r[i].CVSSv3Score > r[j].CVSSv3Score
+	})
 
 	return r
 }
