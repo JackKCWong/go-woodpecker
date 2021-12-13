@@ -2,7 +2,9 @@ package util
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"io"
+	"strings"
 )
 
 func Printfln(out io.Writer, format string, args ...interface{}) error {
@@ -11,7 +13,14 @@ func Printfln(out io.Writer, format string, args ...interface{}) error {
 }
 
 func DrainLines(out io.Writer, lines <-chan string) {
+	replacer := strings.NewReplacer(
+		"[INFO]", color.GreenString("[INFO]"),
+		"[WARNING]", color.HiYellowString("[WARNING]"),
+		"[ERROR]", color.HiRedString("[ERROR]"),
+		"BUILD SUCCESS", color.HiGreenString("BUILD SUCCESS"),
+		"BUILD FAILURE", color.HiRedString("BUILD FAILURE"))
+
 	for l := range lines {
-		_, _ = fmt.Fprintln(out, l)
+		_, _ = fmt.Fprintln(out, replacer.Replace(l))
 	}
 }

@@ -23,11 +23,12 @@ var vulTreeCmd = &cobra.Command{
 	Short:   "Print dependency tree with CVEs",
 	Aliases: []string{"ls"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		verbose, _ := cmd.Flags().GetBool("verbose")
-		link, _ := cmd.Flags().GetBool("link")
-		updater := maven.NewUpdater("pom.xml", maven.UpdaterOpts{
-			Verbose: verbose,
-		})
+		noProgress, _ := cmd.Flags().GetBool("no-progress")
+		showDetails, _ := cmd.Flags().GetBool("details")
+		updater := maven.NewUpdater("pom.xml",
+			maven.UpdaterOpts{
+				Verbose: !noProgress,
+			})
 
 		tree, err := updater.DependencyTree()
 		if err != nil {
@@ -76,7 +77,7 @@ var vulTreeCmd = &cobra.Command{
 						map[bool]string{
 							true:  v.CVEUrl,
 							false: "",
-						}[link])
+						}[showDetails])
 				}
 			}
 		}
@@ -86,5 +87,6 @@ var vulTreeCmd = &cobra.Command{
 }
 
 func init() {
-	vulTreeCmd.Flags().BoolP("link", "l", false, "show ref links")
+	vulTreeCmd.Flags().Bool("no-progress", false, "supress in-progress output")
+	vulTreeCmd.Flags().BoolP("details", "d", false, "show details & ref links")
 }

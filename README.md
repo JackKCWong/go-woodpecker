@@ -1,6 +1,6 @@
 # go-woodpecker (WIP)
 
-a collection of tools to help developers deal with vulnerabilities
+Give developers the last-mile help in fixing vulnerabilities  
 
 ## prerequisites
 
