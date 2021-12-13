@@ -1,12 +1,19 @@
 # go-woodpecker (WIP)
 
-A naive idea to keep advancing project dependencies versions until the number of vulnerabilities drops. 
+a collection of tools to help developers deal with vulnerabilities
 
 ## prerequisites
 
-* Maven v3.6.1+
+* Maven v3.0.0+
 
-## Maven projects
+## commands
+
+```bash
+woodpecker -h
+woodpecker tree # shows depedency tree with vulnerabilities
+```
+
+## Maven projects (TODO)
 
 Basically it simply does the following: 
 (note that it use [go-git](https://github.com/go-git/go-git) instead of the usual git client)
