@@ -13,6 +13,8 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	cobra.OnInitialize(initConfig)
+
+	rootCmd.AddCommand(vulTreeCmd)
 }
 
 func initConfig() {

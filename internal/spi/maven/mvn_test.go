@@ -11,6 +11,34 @@ import (
 )
 
 var testRepo string
+var testDepTree = `hello-world
++- org.slf4j:slf4j-api:jar:1.7.32:compile
++- org.slf4j:slf4j-simple:jar:1.7.32:test
++- io.netty:netty-transport:jar:4.1.71.Final:compile
+|  \- io.netty:netty-resolver:jar:4.1.71.Final:compile
++- io.netty:netty-handler:jar:4.1.71.Final:compile
+|  \- io.netty:netty-tcnative-classes:jar:2.0.46.Final:compile
++- io.netty:netty-codec-http:jar:4.1.71.Final:compile
++- io.netty:netty-buffer:jar:4.1.71.Final:compile
++- io.netty:netty-common:jar:4.1.71.Final:compile
++- io.netty:netty-codec:jar:4.1.71.Final:compile
++- io.netty:netty-codec-http2:jar:4.1.71.Final:compile
++- javax.ws.rs:javax.ws.rs-api:jar:2.1.1:compile
++- org.hamcrest:hamcrest:jar:2.2:test
++- junit:junit:jar:4.13.2:test
++- org.eclipse.jetty:jetty-client:jar:9.4.31.v20200723:test
+|  +- org.eclipse.jetty:jetty-http:jar:9.4.31.v20200723:test
+|  \- org.eclipse.jetty:jetty-io:jar:9.4.31.v20200723:test
++- com.squareup.okhttp3:okhttp:jar:4.9.2:test
+|  \- org.jetbrains.kotlin:kotlin-stdlib:jar:1.4.10:test
+|     +- org.jetbrains.kotlin:kotlin-stdlib-common:jar:1.4.10:test
+|     \- org.jetbrains:annotations:jar:13.0:test
++- com.squareup.okio:okio:jar:2.8.0:test
++- org.eclipse.jetty:jetty-util:jar:9.4.31.v20200723:test
++- org.json:json:jar:20210307:test
++- org.webjars:jquery:jar:1.12.0:test
+\- org.webjars:jquery-ui:jar:1.12.1:test
+`
 
 func init() {
 	testRepo = os.Getenv("WOODPECKER_REPO")
@@ -19,7 +47,7 @@ func init() {
 	}
 }
 
-func TestMaven_UpdateDependencies(t *testing.T) {
+func TestMavenUpdateDependencies(t *testing.T) {
 	mvn := Mvn{
 		POM: testRepo + "/pom.xml",
 	}
@@ -40,7 +68,7 @@ func TestMaven_UpdateDependencies(t *testing.T) {
 	require.Contains(t, lines, "[INFO] BUILD SUCCESS")
 }
 
-func TestMaven_DependencyTree(t *testing.T) {
+func TestMavenDependencyTree(t *testing.T) {
 	mvn := Mvn{
 		POM: testRepo + "/pom.xml",
 	}
@@ -61,7 +89,7 @@ func TestMaven_DependencyTree(t *testing.T) {
 	t.Logf("dependency tree: %s", tree)
 }
 
-func TestMvn_VulnerabilityReport(t *testing.T) {
+func TestMavenVulnerabilityReport(t *testing.T) {
 	mvn := Mvn{
 		POM: testRepo + "/pom.xml",
 	}
@@ -74,7 +102,7 @@ func TestMvn_VulnerabilityReport(t *testing.T) {
 	require.Nilf(t, err, "failed to run dependency:tree, error:%q", err)
 }
 
-func Test_FindVulnerabilities(t *testing.T) {
+func TestVulnerabilityReport(t *testing.T) {
 	report, err := ioutil.ReadFile(testRepo + "/target/dependency-check-report.json")
 	require.Nil(t, err)
 
@@ -84,8 +112,14 @@ func Test_FindVulnerabilities(t *testing.T) {
 
 	require.Greater(t, len(vr.Dependencies), 0, "expecting non-zero dependencies")
 
-	cohVuls := FindVulnerabilities(vr)
-	require.Greater(t, len(cohVuls), 0, "expecting non-zero Critical or High vulnerabilities")
+	hoc := vr.HighOrCritical()
+	require.Greater(t, len(hoc), 0, "expecting non-zero Critical or High vulnerabilities")
+
+	depTree := parseDepTree(testDepTree)
+	vr.FillIn(&depTree)
+	tcnative, found := depTree.Find("io.netty:netty-tcnative-classes:2.0.46.Final")
+	require.True(t, found)
+	require.Greater(t, len(tcnative.Vulnerabilities), 0)
 }
 
 func drainStdout(t *testing.T, stdout <-chan string) []string {

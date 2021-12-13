@@ -6,7 +6,7 @@ import (
 )
 
 func Printfln(out io.Writer, format string, args ...interface{}) error {
-	_, err := fmt.Fprintf(out, format, args...)
+	_, err := fmt.Fprintf(out, format+"\n", args...)
 	return err
 }
 
