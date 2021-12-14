@@ -43,7 +43,7 @@ func (t DependencyTree) Nodes() []DependencyTreeNode {
 }
 
 func (t DependencyTree) Get(i int) DependencyTreeNode {
-	return t.Get(i)
+	return t.nodes[i]
 }
 
 func (t DependencyTree) Set(i int, node DependencyTreeNode) {

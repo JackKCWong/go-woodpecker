@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"github.com/google/go-github/v41/github"
 	"golang.org/x/oauth2"
+	"net/url"
 	"strings"
 )
 
 type GitHub struct {
+	BaseURL     *url.URL
 	AccessToken string
 }
 
@@ -20,6 +22,7 @@ func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, to
 	tc := oauth2.NewClient(ctx, ts)
 
 	githubClient := github.NewClient(tc)
+	githubClient.BaseURL = c.BaseURL
 	user, resp, err := githubClient.Users.Get(ctx, "")
 	if err != nil {
 		return err

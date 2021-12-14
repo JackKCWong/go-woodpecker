@@ -52,7 +52,7 @@ var vulTreeCmd = &cobra.Command{
 				subtree, _ := tree.Subtree(n.ID)
 				if subtree.VulnerabilityCount() > 0 {
 					nColor = cShouldUpdate
-					suffix = "\t\t<-----\t" + strconv.Itoa(subtree.VulnerabilityCount()) + " vulnerabilities"
+					suffix = "\t\t(" + strconv.Itoa(subtree.VulnerabilityCount()) + " vulnerabilities)"
 				}
 			}
 
@@ -93,5 +93,5 @@ var vulTreeCmd = &cobra.Command{
 }
 
 func init() {
-	vulTreeCmd.Flags().Bool("no-progress", false, "supress in-progress output")
+	vulTreeCmd.Flags().Bool("no-progress", false, "suppress in-progress output")
 }

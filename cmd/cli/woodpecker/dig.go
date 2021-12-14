@@ -2,13 +2,17 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/internal/api"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/gitop"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -16,6 +20,40 @@ var digCmd = &cobra.Command{
 	Use:   "dig [package_id]",
 	Short: "dig out a dependency which can be upgraded to reduce vulnerabilities. package_id is in the format of groupId:artifactId:version",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := viper.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+				// Config file not found; ignore error
+				util.Printfln(os.Stdout, "config not found, continue...")
+			} else {
+				// Config file was found but another error was produced
+				return fmt.Errorf("failed to read config file: %w", err)
+			}
+		}
+
+		githubUrl := viper.GetString("github.url")
+		if githubUrl == "" {
+			return errors.New("github.url is not set")
+		}
+
+		if !strings.HasSuffix(githubUrl, "/") {
+			githubUrl += "/"
+		}
+
+		githubURL, err := url.Parse(githubUrl)
+		if err != nil {
+			return fmt.Errorf("github.url is not a valid url: %w", err)
+		}
+
+		githubToken := viper.GetString("github.accesstoken")
+		if githubToken == "" {
+			return errors.New("github.accesstoken is not set")
+		}
+
+		gitDir, err := gitop.FindGitDir("./")
+		if err != nil {
+			return err
+		}
+
 		updater := maven.NewUpdater(
 			"pom.xml",
 			maven.UpdaterOpts{Verbose: true},
@@ -42,9 +80,9 @@ var digCmd = &cobra.Command{
 			}
 		}
 
-		util.Printfln(os.Stdout, "--------------------------------------------")
+		util.Printfln(os.Stdout, strings.Repeat("-", 80))
 		util.Printfln(os.Stdout, "updating dependencies %s with %d vulnerabilities", target.Root().ID, target.VulnerabilityCount())
-		util.Printfln(os.Stdout, "--------------------------------------------")
+		util.Printfln(os.Stdout, strings.Repeat("-", 80))
 		err = updater.UpdateDependency(target.Root().ID)
 		if err != nil {
 			return err
@@ -62,11 +100,6 @@ var digCmd = &cobra.Command{
 
 		util.Printfln(os.Stdout, "opening git repo")
 
-		gitDir, err := gitop.FindGitDir("./")
-		if err != nil {
-			return err
-		}
-
 		gitClient := gitop.GitClient{RepoDir: gitDir}
 
 		origin, err := gitClient.Origin()
@@ -80,7 +113,10 @@ var digCmd = &cobra.Command{
 			return err
 		}
 
-		gitHub := gitop.GitHub{AccessToken: os.Getenv("WOODPECKER_GITHUB_ACCESSTOKEN")}
+		gitHub := gitop.GitHub{
+			BaseURL:     githubURL,
+			AccessToken: githubToken,
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -97,5 +133,9 @@ var digCmd = &cobra.Command{
 }
 
 func init() {
+	digCmd.Flags().String("github-url", "", "github api url. e.g. https://api.github.com")
+	viper.BindPFlag("github.url", digCmd.Flags().Lookup("github-url"))
 
+	digCmd.Flags().String("github-accesstoken", "", "github access token")
+	viper.BindPFlag("github.accesstoken", digCmd.Flags().Lookup("github-accesstoken"))
 }
