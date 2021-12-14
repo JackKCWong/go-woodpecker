@@ -7,8 +7,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "woodpecker",
-	Short: "A collections of tools to help developer to deal with vulnerabiliies",
+	Use:          "woodpecker",
+	Short:        "A collections of tools to help developer to deal with vulnerabiliies",
+	SilenceUsage: true,
 }
 
 func init() {
@@ -16,6 +17,7 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.AddCommand(vulTreeCmd)
+	rootCmd.AddCommand(digCmd)
 }
 
 func initConfig() {

@@ -13,12 +13,25 @@ import (
 )
 
 type GitClient struct {
-	Dir         string
-	AccessToken string
+	RepoDir string
+}
+
+func (c GitClient) Origin() (string, error) {
+	repo, err := git.PlainOpen(c.RepoDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to open repo: %w", err)
+	}
+
+	origin, err := repo.Remote("origin")
+	if err != nil {
+		return "", err
+	}
+
+	return origin.Config().URLs[0], nil
 }
 
 func (c GitClient) CommitAndPush(branchName, msg string) (string, error) {
-	repo, err := git.PlainOpen(c.Dir)
+	repo, err := git.PlainOpen(c.RepoDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to open repo: %w", err)
 	}

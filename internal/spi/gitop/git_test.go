@@ -8,13 +8,25 @@ import (
 	"time"
 )
 
-func TestGitClient_CommitAndPush(t *testing.T) {
-	repo := os.Getenv("WOODPECKER_REPO")
-	require.NotEmpty(t, repo, "WOODPECKER_REPO is not defined")
+var testRepo string
 
-	gitClient := GitClient{Dir: repo}
+func init() {
+	testRepo = os.Getenv("WOODPECKER_REPO")
+	if testRepo == "" {
+		testRepo = os.ExpandEnv("$HOME/Workspace/repos/mu-server")
+	}
+}
+func TestGitClient_CommitAndPush(t *testing.T) {
+	gitClient := GitClient{RepoDir: testRepo}
 	commit, err := gitClient.CommitAndPush("update-deps", "auto update dependencies")
 	require.NotEmptyf(t, commit, "failed to commit: %q", err)
+}
+
+func TestGitClient_Origin(t *testing.T) {
+	gitClient := GitClient{RepoDir: testRepo}
+	origin, err := gitClient.Origin()
+	require.Nil(t, err)
+	require.Equal(t, "git@github.com:3redronin/mu-server.git", origin)
 }
 
 func TestGitHub_CreatePullRequest(t *testing.T) {

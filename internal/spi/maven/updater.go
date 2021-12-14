@@ -38,14 +38,28 @@ func (u Updater) CanContinueUpdate() bool {
 	panic("implement me")
 }
 
-func (u Updater) UpdateDependency() error {
-	//TODO implement me
-	panic("implement me")
+func (u Updater) UpdateDependency(id string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	err := u.drainStdout(u.mvn.DependencyUpdate(ctx, id))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u Updater) Verify() error {
-	//TODO implement me
-	panic("implement me")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+
+	err := u.drainStdout(u.mvn.Verify(ctx))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u Updater) DependencyTree() (api.DependencyTree, error) {
@@ -53,7 +67,7 @@ func (u Updater) DependencyTree() (api.DependencyTree, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	err := u.checkStdout(u.mvn.VulnerabilityReport(ctx))
+	err := u.drainStdout(u.mvn.VulnerabilityReport(ctx))
 	if err != nil {
 		return tree, err
 	}
@@ -63,7 +77,7 @@ func (u Updater) DependencyTree() (api.DependencyTree, error) {
 		return tree, err
 	}
 
-	err = u.checkStdout(u.mvn.DependencyTree(ctx, temp.Name()))
+	err = u.drainStdout(u.mvn.DependencyTree(ctx, temp.Name()))
 	if err != nil {
 		return tree, err
 	}
@@ -84,7 +98,7 @@ func (u Updater) DependencyTree() (api.DependencyTree, error) {
 	return tree, nil
 }
 
-func (u Updater) checkStdout(stdout <-chan string, errors <-chan error) error {
+func (u Updater) drainStdout(stdout <-chan string, errors <-chan error) error {
 	if u.opts.Verbose {
 		go util.DrainLines(os.Stdout, stdout)
 	}
@@ -115,6 +129,18 @@ func (u Updater) loadVulnerabilityReport() (*VulnerabilityReport, error) {
 	}
 
 	return vr, nil
+}
+
+func (u Updater) StageUpdate() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err := u.drainStdout(u.mvn.VersionCommit(ctx))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func parseDepTree(content string) api.DependencyTree {

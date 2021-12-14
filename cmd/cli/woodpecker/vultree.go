@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/fatih/color"
@@ -35,6 +36,7 @@ var vulTreeCmd = &cobra.Command{
 			return err
 		}
 
+		fmt.Println()
 		for _, n := range tree.Nodes {
 			if n.Scope == "test" {
 				continue

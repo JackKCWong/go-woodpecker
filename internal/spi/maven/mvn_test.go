@@ -11,7 +11,15 @@ import (
 )
 
 var testRepo string
-var testDepTree = `hello-world
+
+func init() {
+	testRepo = os.Getenv("WOODPECKER_REPO")
+	if testRepo == "" {
+		testRepo = os.ExpandEnv("$HOME/Workspace/repos/mu-server")
+	}
+}
+
+var testDepTree = `test-project:hello-world:jar:SNAPSHOT
 +- org.slf4j:slf4j-api:jar:1.7.32:compile
 +- org.slf4j:slf4j-simple:jar:1.7.32:test
 +- io.netty:netty-transport:jar:4.1.71.Final:compile
@@ -40,13 +48,6 @@ var testDepTree = `hello-world
 \- org.webjars:jquery-ui:jar:1.12.1:test
 `
 
-func init() {
-	testRepo = os.Getenv("WOODPECKER_REPO")
-	if testRepo == "" {
-		testRepo = os.ExpandEnv("$HOME/Workspace/repos/mu-server")
-	}
-}
-
 func TestMavenUpdateDependencies(t *testing.T) {
 	mvn := Mvn{
 		POM: testRepo + "/pom.xml",
@@ -54,18 +55,18 @@ func TestMavenUpdateDependencies(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	stdout, errors := mvn.DependencyUpdate(ctx)
+	stdout, errors := mvn.DependencyUpdate(ctx, "io.netty:netty-tcnative-classes:2.0.46.Final")
 	lines := drainStdout(t, stdout)
 
 	err := <-errors
 	require.Nilf(t, err, "failed to update deps: %q", err)
 	require.Contains(t, lines, "[INFO] BUILD SUCCESS")
 
-	stdout, errors = mvn.Verify(ctx)
-	_ = drainStdout(t, stdout)
-	err = <-errors
-	require.Nilf(t, err, "failed to verify: %q", err)
-	require.Contains(t, lines, "[INFO] BUILD SUCCESS")
+	//stdout, errors = mvn.Verify(ctx)
+	//_ = drainStdout(t, stdout)
+	//err = <-errors
+	//require.Nilf(t, err, "failed to verify: %q", err)
+	//require.Contains(t, lines, "[INFO] BUILD SUCCESS")
 }
 
 func TestMavenDependencyTree(t *testing.T) {
@@ -120,6 +121,11 @@ func TestVulnerabilityReport(t *testing.T) {
 	tcnative, found := depTree.Find("io.netty:netty-tcnative-classes:2.0.46.Final")
 	require.True(t, found)
 	require.Greater(t, len(tcnative.Vulnerabilities), 0)
+
+	vulnerable, found := depTree.MostVulnerable()
+	require.True(t, found)
+	require.Len(t, vulnerable.Nodes, 2)
+	require.Equal(t, "io.netty:netty-handler:4.1.71.Final", vulnerable.Nodes[0].ID)
 }
 
 func drainStdout(t *testing.T, stdout <-chan string) []string {

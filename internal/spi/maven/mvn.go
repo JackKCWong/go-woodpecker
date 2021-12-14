@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-cmd/cmd"
 	"path"
+	"strings"
 )
 
 type Mvn struct {
@@ -12,12 +13,16 @@ type Mvn struct {
 	POM string
 }
 
-func (m Mvn) DependencyUpdate(ctx context.Context) (<-chan string, <-chan error) {
-	return m.mvnRun(ctx, "versions:use-next-releases")
+func (m Mvn) DependencyUpdate(ctx context.Context, includes ...string) (<-chan string, <-chan error) {
+	return m.mvnRun(ctx, "versions:use-next-releases", "-Dincludes="+strings.Join(includes, ","))
 }
 
 func (m Mvn) DependencyTree(ctx context.Context, outFile string) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "dependency:tree", "-DoutputFile="+outFile)
+}
+
+func (m Mvn) VersionCommit(ctx context.Context) (<-chan string, <-chan error) {
+	return m.mvnRun(ctx, "versions:commit")
 }
 
 func (m Mvn) VulnerabilityReport(ctx context.Context) (<-chan string, <-chan error) {
