@@ -7,6 +7,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 )
@@ -37,7 +38,7 @@ var vulTreeCmd = &cobra.Command{
 		}
 
 		fmt.Println()
-		for _, n := range tree.Nodes {
+		for _, n := range tree.Nodes() {
 			if n.Scope == "test" {
 				continue
 			}
@@ -47,9 +48,12 @@ var vulTreeCmd = &cobra.Command{
 			prefix := ""
 			suffix := ""
 
-			if n.ShouldUpdate {
-				nColor = cShouldUpdate
-				suffix = "\t\t\t<-----\tupdate this"
+			if n.Depth == 1 {
+				subtree, _ := tree.Subtree(n.ID)
+				if subtree.VulnerabilityCount() > 0 {
+					nColor = cShouldUpdate
+					suffix = "\t\t<-----\t" + strconv.Itoa(subtree.VulnerabilityCount()) + " vulnerabilities"
+				}
 			}
 
 			switch {

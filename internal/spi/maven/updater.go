@@ -176,7 +176,7 @@ func parseDepTree(content string) api.DependencyTree {
 		})
 	}
 
-	return api.DependencyTree{Nodes: nodes}
+	return api.NewDependencyTree(nodes)
 }
 
 func parseTreeNode(line string) (string, string, string, string) {

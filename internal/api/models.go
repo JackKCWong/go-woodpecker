@@ -9,7 +9,11 @@ type DependencyUpdater interface {
 }
 
 type DependencyTree struct {
-	Nodes []DependencyTreeNode
+	nodes []DependencyTreeNode
+}
+
+func NewDependencyTree(nodes []DependencyTreeNode) DependencyTree {
+	return DependencyTree{nodes: nodes}
 }
 
 type DependencyTreeNode struct {
@@ -34,8 +38,20 @@ type Vulnerability struct {
 	CVSSv3Score float64
 }
 
+func (t DependencyTree) Nodes() []DependencyTreeNode {
+	return t.nodes
+}
+
+func (t DependencyTree) Get(i int) DependencyTreeNode {
+	return t.Get(i)
+}
+
+func (t DependencyTree) Set(i int, node DependencyTreeNode) {
+	t.nodes[i] = node
+}
+
 func (t DependencyTree) Find(depID string) (DependencyTreeNode, bool) {
-	for _, n := range t.Nodes {
+	for _, n := range t.Nodes() {
 		if n.ID == depID {
 			return n, true
 		}
@@ -47,24 +63,51 @@ func (t DependencyTree) Find(depID string) (DependencyTreeNode, bool) {
 func (t DependencyTree) AllVulnerabilities() []Vulnerability {
 	var all []Vulnerability
 
-	for _, n := range t.Nodes {
+	for _, n := range t.Nodes() {
 		all = append(all, n.Vulnerabilities...)
 	}
 
 	return all
 }
 
-// MostVulnerable returns the sub tree with the highest CVSS score, if any
+func (t DependencyTree) Subtree(rootID string) (DependencyTree, bool) {
+	var found bool
+	var subtree []DependencyTreeNode
+	for _, n := range t.Nodes() {
+		if n.ID == rootID {
+			found = true
+			subtree = append(subtree, n)
+			continue
+		}
+
+		if found && n.Depth == 1 {
+			// stop at next root node
+			break
+		}
+
+		if found {
+			subtree = append(subtree, n)
+		}
+	}
+
+	if found {
+		return DependencyTree{subtree}, found
+	}
+
+	return DependencyTree{}, false
+}
+
+// MostVulnerable returns the subtree with the highest CVSS score, if any
 func (t DependencyTree) MostVulnerable() (DependencyTree, bool) {
 	subTrees := make(map[string][]DependencyTreeNode)
 
 	var currentTopNode string
-	for i := 1; i < len(t.Nodes); i++ {
-		if t.Nodes[i].Depth == 1 {
-			currentTopNode = t.Nodes[i].ID
+	for i := 1; i < len(t.Nodes()); i++ {
+		if t.Get(i).Depth == 1 {
+			currentTopNode = t.Get(i).ID
 		}
 
-		subTrees[currentTopNode] = append(subTrees[currentTopNode], t.Nodes[i])
+		subTrees[currentTopNode] = append(subTrees[currentTopNode], t.Get(i))
 	}
 
 	sum := func(nodes []DependencyTreeNode) float64 {
@@ -89,12 +132,21 @@ func (t DependencyTree) MostVulnerable() (DependencyTree, bool) {
 	}
 
 	if maxScore > 0 {
-		return DependencyTree{Nodes: subTrees[maxID]}, true
+		return DependencyTree{nodes: subTrees[maxID]}, true
 	}
 
 	return DependencyTree{}, false
 }
 
 func (t DependencyTree) Root() DependencyTreeNode {
-	return t.Nodes[0]
+	return t.Get(0)
+}
+
+func (t DependencyTree) VulnerabilityCount() int {
+	count := 0
+	for _, n := range t.Nodes() {
+		count += len(n.Vulnerabilities)
+	}
+
+	return count
 }

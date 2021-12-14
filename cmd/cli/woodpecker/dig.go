@@ -26,25 +26,26 @@ var digCmd = &cobra.Command{
 			return err
 		}
 
-		var target api.DependencyTreeNode
+		var target api.DependencyTree
 		var found bool
 		if len(args) > 0 {
 			packageID := args[0]
-			target, found = depTree.Find(packageID)
+			target, found = depTree.Subtree(packageID)
 			if !found {
 				return fmt.Errorf("package %s not found", packageID)
 			}
 		} else {
-			vulnerable, found := depTree.MostVulnerable()
+			target, found = depTree.MostVulnerable()
 			if !found {
 				fmt.Println("Congratulations! Your project has no CVE.")
 				return nil
 			}
-			target, _ = depTree.Find(vulnerable.Root().ID)
 		}
 
-		util.Printfln(os.Stdout, "updating dependencies %s", target.ID)
-		err = updater.UpdateDependency(target.ID)
+		util.Printfln(os.Stdout, "--------------------------------------------")
+		util.Printfln(os.Stdout, "updating dependencies %s with %d vulnerabilities", target.Root().ID, target.VulnerabilityCount())
+		util.Printfln(os.Stdout, "--------------------------------------------")
+		err = updater.UpdateDependency(target.Root().ID)
 		if err != nil {
 			return err
 		}
@@ -74,7 +75,7 @@ var digCmd = &cobra.Command{
 		}
 
 		util.Printfln(os.Stdout, "pushing changes to  %s", origin)
-		_, err = gitClient.CommitAndPush("woodpecker-autoupdate", "update "+target.ID)
+		_, err = gitClient.CommitAndPush("woodpecker-autoupdate", "update "+target.Root().ID)
 		if err != nil {
 			return err
 		}
