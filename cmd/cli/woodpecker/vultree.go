@@ -8,10 +8,11 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"strings"
+	"text/tabwriter"
 )
 
 var (
-	cCritical     = color.New(color.FgRed, color.BgHiYellow).SprintFunc()
+	cCritical     = color.New(color.FgRed).SprintFunc()
 	cHigh         = color.New(color.FgHiRed).SprintFunc()
 	cMedium       = color.New(color.FgHiYellow).SprintFunc()
 	cLow          = color.New(color.FgYellow).SprintFunc()
@@ -25,7 +26,6 @@ var vulTreeCmd = &cobra.Command{
 	Aliases: []string{"ls"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		noProgress, _ := cmd.Flags().GetBool("no-progress")
-		showDetails, _ := cmd.Flags().GetBool("details")
 		updater := maven.NewUpdater("pom.xml",
 			maven.UpdaterOpts{
 				Verbose: !noProgress,
@@ -61,7 +61,10 @@ var vulTreeCmd = &cobra.Command{
 
 			util.Printfln(os.Stdout, "%s%s%s%s", padding, prefix, nColor(n.ID), suffix)
 			if len(n.Vulnerabilities) > 0 {
-				for _, v := range n.Vulnerabilities {
+				tw := new(tabwriter.Writer)
+				tw.Init(os.Stdout, 10, 0, 2, ' ', 0)
+
+				for i, v := range n.Vulnerabilities {
 					var vColor func(...interface{}) string
 					switch {
 					case v.CVSSv2Score >= 9.0 || v.CVSSv3Score >= 9.0:
@@ -74,13 +77,10 @@ var vulTreeCmd = &cobra.Command{
 						vColor = cLow
 					}
 
-					util.Printfln(os.Stdout, "%s   * %s\t%s\t%s", padding,
-						vColor(v.ID), vColor(v.Severity),
-						map[bool]string{
-							true:  v.CVEUrl,
-							false: "",
-						}[showDetails])
+					util.Printfln(tw, "%s   %d\t%s\t%s\t%.1f/%.1f\t%s", padding, i+1,
+						vColor(v.ID), vColor(v.Severity), v.CVSSv2Score, v.CVSSv3Score, v.CVEUrl)
 				}
+				tw.Flush()
 			}
 		}
 
@@ -90,5 +90,4 @@ var vulTreeCmd = &cobra.Command{
 
 func init() {
 	vulTreeCmd.Flags().Bool("no-progress", false, "supress in-progress output")
-	vulTreeCmd.Flags().BoolP("details", "d", false, "show details & ref links")
 }

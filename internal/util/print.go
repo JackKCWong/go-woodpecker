@@ -14,7 +14,7 @@ func Printfln(out io.Writer, format string, args ...interface{}) error {
 
 func DrainLines(out io.Writer, lines <-chan string) {
 	replacer := strings.NewReplacer(
-		"[INFO]", color.GreenString("[INFO]"),
+		"[INFO]", color.HiBlueString("[INFO]"),
 		"[WARNING]", color.HiYellowString("[WARNING]"),
 		"[ERROR]", color.HiRedString("[ERROR]"),
 		"BUILD SUCCESS", color.HiGreenString("BUILD SUCCESS"),
