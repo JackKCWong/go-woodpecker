@@ -14,7 +14,12 @@ type Mvn struct {
 }
 
 func (m Mvn) DependencyUpdate(ctx context.Context, includes ...string) (<-chan string, <-chan error) {
-	return m.mvnRun(ctx, "versions:use-next-releases", "-Dincludes="+strings.Join(includes, ","))
+	var artifacts []string
+	for _, include := range includes {
+		artifacts = append(artifacts, m.getGroupArtifact(include))
+	}
+
+	return m.mvnRun(ctx, "versions:use-next-releases", "-Dincludes="+strings.Join(artifacts, ","))
 }
 
 func (m Mvn) DependencyTree(ctx context.Context, outFile string) (<-chan string, <-chan error) {
@@ -80,4 +85,9 @@ func (m Mvn) wd() string {
 	}
 
 	return dir
+}
+
+func (m Mvn) getGroupArtifact(id string) string {
+	split := strings.Split(id, ":")
+	return split[0] + ":" + split[1]
 }

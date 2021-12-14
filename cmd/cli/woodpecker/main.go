@@ -10,6 +10,7 @@ var rootCmd = &cobra.Command{
 	Use:          "woodpecker",
 	Short:        "A collections of tools to help developer to deal with vulnerabiliies",
 	SilenceUsage: true,
+	SilenceErrors: true,
 }
 
 func init() {

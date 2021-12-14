@@ -26,7 +26,7 @@ type DependencyTreeNode struct {
 
 type Vulnerability struct {
 	ID          string
-	Descrption  string
+	Description string
 	Source      string
 	Severity    string
 	CVEUrl      string

@@ -3,6 +3,7 @@ module github.com/JackKCWong/go-woodpecker
 go 1.17
 
 require (
+	github.com/fatih/color v1.13.0
 	github.com/go-cmd/cmd v1.3.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-github/v41 v41.0.0
@@ -17,7 +18,6 @@ require (
 	github.com/acomagu/bufpipe v1.0.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

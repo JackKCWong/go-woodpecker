@@ -9,6 +9,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -91,6 +92,24 @@ func (c GitClient) CommitAndPush(branchName, msg string) (string, error) {
 	}
 
 	return h.String(), nil
+}
+
+func FindGitDir(dir string) (string, error) {
+	if _, err := os.Stat(path.Join(dir, ".git")); err == nil {
+		return dir, nil
+	}
+
+	if filepath.IsAbs(dir) {
+		dir = filepath.Dir(dir)
+	} else {
+		dir = filepath.Join(dir, "..")
+	}
+
+	if _, err := os.Stat(path.Join(dir, ".git")); err == nil {
+		return dir, nil
+	}
+
+	return "", fmt.Errorf("not a git repo")
 }
 
 func newSshPubKeyAuth() (*ssh.PublicKeys, error) {

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/JackKCWong/go-woodpecker/internal/api"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/gitop"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
@@ -12,8 +13,8 @@ import (
 )
 
 var digCmd = &cobra.Command{
-	Use:   "dig",
-	Short: "dig out a dependency which can be upgraded to reduce vulnerabilities",
+	Use:   "dig [package_id]",
+	Short: "dig out a dependency which can be upgraded to reduce vulnerabilities. package_id is in the format of groupId:artifactId:version",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		updater := maven.NewUpdater(
 			"pom.xml",
@@ -25,15 +26,25 @@ var digCmd = &cobra.Command{
 			return err
 		}
 
-		vulnerable, found := depTree.MostVulnerable()
-		if !found {
-			fmt.Println("Congradulation! Your project has no CVE.")
-			return nil
+		var target api.DependencyTreeNode
+		var found bool
+		if len(args) > 0 {
+			packageID := args[0]
+			target, found = depTree.Find(packageID)
+			if !found {
+				return fmt.Errorf("package %s not found", packageID)
+			}
+		} else {
+			vulnerable, found := depTree.MostVulnerable()
+			if !found {
+				fmt.Println("Congratulations! Your project has no CVE.")
+				return nil
+			}
+			target, _ = depTree.Find(vulnerable.Root().ID)
 		}
 
-		root, _ := depTree.Find(vulnerable.Root().ID)
-		util.Printfln(os.Stdout, "updating dependencies %s with %d vulnerabilities", root.ID, len(vulnerable.AllVulnerabilities()))
-		err = updater.UpdateDependency(root.ID)
+		util.Printfln(os.Stdout, "updating dependencies %s", target.ID)
+		err = updater.UpdateDependency(target.ID)
 		if err != nil {
 			return err
 		}
@@ -48,14 +59,22 @@ var digCmd = &cobra.Command{
 			return err
 		}
 
-		gitClient := gitop.GitClient{RepoDir: "./"}
+		util.Printfln(os.Stdout, "opening git repo")
 
-		_, err = gitClient.CommitAndPush("woodpecker-autoupdate", "update "+vulnerable.Root().ID)
+		gitDir, err := gitop.FindGitDir("./")
 		if err != nil {
 			return err
 		}
 
+		gitClient := gitop.GitClient{RepoDir: gitDir}
+
 		origin, err := gitClient.Origin()
+		if err != nil {
+			return err
+		}
+
+		util.Printfln(os.Stdout, "pushing changes to  %s", origin)
+		_, err = gitClient.CommitAndPush("woodpecker-autoupdate", "update "+target.ID)
 		if err != nil {
 			return err
 		}
@@ -65,11 +84,13 @@ var digCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
+		util.Printfln(os.Stdout, "creating pull request to %s", origin)
 		err = gitHub.CreatePullRequest(ctx, origin, "woodpecker-autoupdate", "master")
 		if err != nil {
 			return err
 		}
 
+		util.Printfln(os.Stdout, "pull request created")
 		return nil
 	},
 }
