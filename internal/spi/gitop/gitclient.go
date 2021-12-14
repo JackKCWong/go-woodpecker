@@ -31,7 +31,31 @@ func (c GitClient) Origin() (string, error) {
 	return origin.Config().URLs[0], nil
 }
 
-func (c GitClient) CommitAndPush(branchName, msg string) (string, error) {
+func (c GitClient) CreateBranch(name string) error {
+	repo, err := git.PlainOpen(c.RepoDir)
+	if err != nil {
+		return fmt.Errorf("failed to open repo: %w", err)
+	}
+
+	wtree, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to open worktree: %w", err)
+	}
+
+	err = wtree.Checkout(&git.CheckoutOptions{
+		Branch: plumbing.ReferenceName("refs/heads/" + name),
+		Create: true,
+		Keep:   true,
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to checkout branch: %w", err)
+	}
+
+	return nil
+}
+
+func (c GitClient) CommitAndPush(msg string) (string, error) {
 	repo, err := git.PlainOpen(c.RepoDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to open repo: %w", err)
@@ -49,16 +73,6 @@ func (c GitClient) CommitAndPush(branchName, msg string) (string, error) {
 
 	if status.IsClean() {
 		return "", fmt.Errorf("nothing to commit")
-	}
-
-	err = wtree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName("refs/heads/" + branchName),
-		Create: true,
-		Keep:   true,
-	})
-
-	if err != nil {
-		return "", fmt.Errorf("failed to checkout branch: %w", err)
 	}
 
 	err = wtree.AddGlob("**pom.xml")

@@ -18,7 +18,7 @@ func init() {
 }
 func TestGitClient_CommitAndPush(t *testing.T) {
 	gitClient := GitClient{RepoDir: testRepo}
-	commit, err := gitClient.CommitAndPush("update-deps", "auto update dependencies")
+	commit, err := gitClient.CommitAndPush("auto update dependencies")
 	require.NotEmptyf(t, commit, "failed to commit: %q", err)
 }
 
@@ -36,6 +36,6 @@ func TestGitHub_CreatePullRequest(t *testing.T) {
 	gh := GitHub{AccessToken: token}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	err := gh.CreatePullRequest(ctx, "git@github.com:JackKCWong/app-runner.git", "update-deps", "master")
+	_, err := gh.CreatePullRequest(ctx, "git@github.com:JackKCWong/app-runner.git", "update-deps", "master")
 	require.Nilf(t, err, "failed to create PR: %q", err)
 }

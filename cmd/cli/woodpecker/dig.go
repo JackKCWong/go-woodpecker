@@ -54,6 +54,12 @@ var digCmd = &cobra.Command{
 			return err
 		}
 
+		gitClient := gitop.GitClient{RepoDir: gitDir}
+		err = gitClient.CreateBranch("woodpecker-autoupdate")
+		if err != nil {
+			return fmt.Errorf("failed to create branch: %w", err)
+		}
+
 		updater := maven.NewUpdater(
 			"pom.xml",
 			maven.UpdaterOpts{Verbose: true},
@@ -100,7 +106,6 @@ var digCmd = &cobra.Command{
 
 		util.Printfln(os.Stdout, "opening git repo")
 
-		gitClient := gitop.GitClient{RepoDir: gitDir}
 
 		origin, err := gitClient.Origin()
 		if err != nil {
@@ -108,7 +113,7 @@ var digCmd = &cobra.Command{
 		}
 
 		util.Printfln(os.Stdout, "pushing changes to  %s", origin)
-		_, err = gitClient.CommitAndPush("woodpecker-autoupdate", "update "+target.Root().ID)
+		_, err = gitClient.CommitAndPush("update " + target.Root().ID)
 		if err != nil {
 			return err
 		}
@@ -122,12 +127,12 @@ var digCmd = &cobra.Command{
 		defer cancel()
 
 		util.Printfln(os.Stdout, "creating pull request to %s", origin)
-		err = gitHub.CreatePullRequest(ctx, origin, "woodpecker-autoupdate", "master")
+		pr, err := gitHub.CreatePullRequest(ctx, origin, "woodpecker-autoupdate", "master")
 		if err != nil {
 			return err
 		}
 
-		util.Printfln(os.Stdout, "pull request created")
+		util.Printfln(os.Stdout, "pull request created: %s", pr)
 		return nil
 	},
 }

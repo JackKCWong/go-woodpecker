@@ -14,7 +14,7 @@ type GitHub struct {
 	AccessToken string
 }
 
-func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, toBranch string) error {
+func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, toBranch string) (string, error) {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: c.AccessToken},
 	)
@@ -25,14 +25,14 @@ func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, to
 	githubClient.BaseURL = c.BaseURL
 	user, resp, err := githubClient.Users.Get(ctx, "")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if resp.Status != "200 OK" {
-		return fmt.Errorf("error authenticating user: %v", user)
+		return "", fmt.Errorf("error authenticating user: %v", user)
 	}
 
-	pr := github.NewPullRequest{
+	npr := github.NewPullRequest{
 		Title:               github.String("auto update dependencies"),
 		Body:                github.String("this request is created by Woodpecker"),
 		Head:                github.String(fromBranch),
@@ -43,16 +43,16 @@ func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, to
 
 	owner, repoName := getRepo(remoteURL)
 
-	_, resp, err = githubClient.PullRequests.Create(ctx, owner, repoName, &pr)
+	pr, resp, err := githubClient.PullRequests.Create(ctx, owner, repoName, &npr)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if resp.Status != "201 Created" {
-		return fmt.Errorf("failed to create PR: %v", resp)
+		return "", fmt.Errorf("failed to create PR: %v", resp)
 	}
 
-	return nil
+	return *pr.URL, nil
 }
 
 func getRepo(repoURL string) (string, string) {
