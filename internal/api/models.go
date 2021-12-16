@@ -150,3 +150,18 @@ func (t DependencyTree) VulnerabilityCount() int {
 
 	return count
 }
+
+func (t DependencyTree) FindCVE(cveID string) (DependencyTree, bool) {
+	for _, n := range t.Nodes() {
+		if n.Depth == 1 {
+			subtree, _ := t.Subtree(n.ID)
+			for _, v := range subtree.AllVulnerabilities() {
+				if v.ID == cveID {
+					return subtree, true
+				}
+			}
+		}
+	}
+
+	return DependencyTree{}, false
+}

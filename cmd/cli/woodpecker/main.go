@@ -22,17 +22,22 @@ func init() {
 	rootCmd.PersistentFlags().Bool("no-progress", false, "suppress progress spinner")
 	viper.BindPFlag("verbose", rootCmd.Flag("verbose"))
 	viper.BindPFlag("noprogress", rootCmd.Flag("no-progress"))
+
 	rootCmd.AddCommand(vulTreeCmd)
 	rootCmd.AddCommand(digCmd)
+	rootCmd.AddCommand(killCmd)
 }
 
 func initConfig() {
-	viper.SetConfigName(".woodpecker.yaml")
+	viper.SetConfigName(".woodpecker")
+	viper.SetConfigType("yaml")
 	viper.AddConfigPath(os.ExpandEnv("$HOME/"))
 	viper.AddConfigPath(".")
 	viper.SetEnvPrefix("WOODPECKER")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	viper.AutomaticEnv()
+
+	viper.Set("branch-name", "woodpecker-autoupdate")
 }
 
 func main() {

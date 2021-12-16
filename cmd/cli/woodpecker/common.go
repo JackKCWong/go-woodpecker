@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/JackKCWong/go-woodpecker/internal/spi/gitop"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/pflag"
@@ -12,11 +13,11 @@ import (
 	"strings"
 )
 
-func newProgressOutput(verbose, noProgress bool) io.Writer {
+func newProgressOutput() io.Writer {
 	var progressOut = ioutil.Discard
-	if verbose {
+	if viper.GetBool("verbose") {
 		progressOut = os.Stdout
-	} else if !noProgress {
+	} else if !viper.GetBool("noprogress") {
 		progressOut = progressbar.DefaultBytes(-1, "working hard...")
 	}
 
@@ -43,4 +44,19 @@ func readViperConf() error {
 	}
 
 	return nil
+}
+
+func newGitClient() (*gitop.GitClient, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	dir, err := gitop.FindGitDir(wd)
+	if err != nil {
+		return nil, err
+	}
+
+	return &gitop.GitClient{
+		RepoDir: dir,
+	}, nil
 }

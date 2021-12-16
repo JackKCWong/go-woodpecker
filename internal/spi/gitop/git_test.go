@@ -18,7 +18,7 @@ func init() {
 }
 func TestGitClient_CommitAndPush(t *testing.T) {
 	gitClient := GitClient{RepoDir: testRepo}
-	commit, err := gitClient.CommitAndPush("auto update dependencies")
+	commit, err := gitClient.Commit("auto update dependencies")
 	require.NotEmptyf(t, commit, "failed to commit: %q", err)
 }
 

@@ -23,9 +23,6 @@ var digCmd = &cobra.Command{
 		return readViperConf()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		verbose := viper.GetBool("verbose")
-		noprogress := viper.GetBool("no-progress")
-
 		githubUrl := viper.GetString("github.url")
 		if githubUrl == "" {
 			return errors.New("github.url is not set")
@@ -45,13 +42,12 @@ var digCmd = &cobra.Command{
 			return errors.New("github.accesstoken is not set")
 		}
 
-		gitDir, err := gitop.FindGitDir("./")
+		gitClient, err := newGitClient()
 		if err != nil {
 			return err
 		}
 
-		gitClient := gitop.GitClient{RepoDir: gitDir}
-		err = gitClient.CreateBranch("woodpecker-autoupdate")
+		err = gitClient.CreateBranch(viper.GetString("branch-name"))
 		if err != nil {
 			return fmt.Errorf("failed to create branch: %w", err)
 		}
@@ -59,7 +55,7 @@ var digCmd = &cobra.Command{
 		depMgr := maven.NewRunner(
 			"pom.xml",
 			maven.Opts{
-				Output:               newProgressOutput(verbose, noprogress),
+				Output:               newProgressOutput(),
 				DependencyCheckProps: viper.GetStringMapString("maven.dependency-check"),
 			},
 		)
@@ -111,7 +107,14 @@ var digCmd = &cobra.Command{
 		}
 
 		util.Printfln(os.Stdout, "pushing changes to  %s", origin)
-		_, err = gitClient.CommitAndPush("update " + target.Root().ID)
+		hash, err := gitClient.Commit("update " + target.Root().ID)
+		if err != nil {
+			return err
+		}
+
+		util.Printfln(os.Stdout, "committed %s", hash)
+
+		err = gitClient.Push()
 		if err != nil {
 			return err
 		}

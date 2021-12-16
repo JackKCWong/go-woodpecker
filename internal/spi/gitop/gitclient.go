@@ -55,7 +55,7 @@ func (c GitClient) CreateBranch(name string) error {
 	return nil
 }
 
-func (c GitClient) CommitAndPush(msg string) (string, error) {
+func (c GitClient) Commit(msg string) (string, error) {
 	repo, err := git.PlainOpen(c.RepoDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to open repo: %w", err)
@@ -88,12 +88,21 @@ func (c GitClient) CommitAndPush(msg string) (string, error) {
 		return "", fmt.Errorf("failed to commit files: %w", err)
 	}
 
+	return h.String(), nil
+}
+
+func (c GitClient) Push() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
 	auth, err := gitAuth()
 	if err != nil {
-		return "", fmt.Errorf("failed to get auth: %w", err)
+		return fmt.Errorf("failed to get auth: %w", err)
+	}
+
+	repo, err := git.PlainOpen(c.RepoDir)
+	if err != nil {
+		return fmt.Errorf("failed to open repo: %w", err)
 	}
 
 	err = repo.PushContext(ctx, &git.PushOptions{
@@ -102,10 +111,10 @@ func (c GitClient) CommitAndPush(msg string) (string, error) {
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("failed to push: %w", err)
+		return fmt.Errorf("failed to push: %w", err)
 	}
 
-	return h.String(), nil
+	return nil
 }
 
 func FindGitDir(dir string) (string, error) {

@@ -28,14 +28,15 @@ var vulTreeCmd = &cobra.Command{
 	Use:     "tree",
 	Short:   "Print dependency tree with CVEs",
 	Aliases: []string{"ls"},
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return readViperConf()
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		verbose, _ := cmd.Flags().GetBool("verbose")
-		noProgress, _ := cmd.Flags().GetBool("no-progress")
 		summaryMode, _ := cmd.Flags().GetBool("summary")
 
 		depMgr := maven.NewRunner("pom.xml",
 			maven.Opts{
-				Output:               newProgressOutput(verbose, noProgress),
+				Output:               newProgressOutput(),
 				DependencyCheckProps: viper.GetStringMapString("maven.dependency-check"),
 			})
 
