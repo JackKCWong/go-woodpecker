@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-type Mvn struct {
+type mvn struct {
 	Bin string
 	POM string
 }
 
-func (m Mvn) DependencyUpdate(ctx context.Context, includes ...string) (<-chan string, <-chan error) {
+func (m mvn) DependencyUpdate(ctx context.Context, includes ...string) (<-chan string, <-chan error) {
 	var artifacts []string
 	for _, include := range includes {
 		artifacts = append(artifacts, m.getGroupArtifact(include))
@@ -22,23 +22,23 @@ func (m Mvn) DependencyUpdate(ctx context.Context, includes ...string) (<-chan s
 	return m.mvnRun(ctx, "versions:use-next-releases", "-Dincludes="+strings.Join(artifacts, ","))
 }
 
-func (m Mvn) DependencyTree(ctx context.Context, outFile string) (<-chan string, <-chan error) {
+func (m mvn) DependencyTree(ctx context.Context, outFile string) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "dependency:tree", "-DoutputFile="+outFile)
 }
 
-func (m Mvn) VersionCommit(ctx context.Context) (<-chan string, <-chan error) {
+func (m mvn) VersionCommit(ctx context.Context) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "versions:commit")
 }
 
-func (m Mvn) VulnerabilityReport(ctx context.Context) (<-chan string, <-chan error) {
+func (m mvn) VulnerabilityReport(ctx context.Context) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "org.owasp:dependency-check-maven:check", "-DretireJsAnalyzerEnabled=false", "-DprettyPrint=true", "-Dformat=json")
 }
 
-func (m Mvn) Verify(ctx context.Context) (<-chan string, <-chan error) {
+func (m mvn) Verify(ctx context.Context) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "verify")
 }
 
-func (m Mvn) mvnRun(ctx context.Context, args ...string) (<-chan string, <-chan error) {
+func (m mvn) mvnRun(ctx context.Context, args ...string) (<-chan string, <-chan error) {
 	errCh := make(chan error, 2)
 	goalRun := cmd.NewCmdOptions(cmd.Options{
 		Buffered:  false,
@@ -66,7 +66,7 @@ func (m Mvn) mvnRun(ctx context.Context, args ...string) (<-chan string, <-chan 
 	return goalRun.Stdout, errCh
 }
 
-func (m Mvn) mvn() string {
+func (m mvn) mvn() string {
 	if m.Bin != "" {
 		return m.Bin
 	}
@@ -74,7 +74,7 @@ func (m Mvn) mvn() string {
 	return "mvn"
 }
 
-func (m Mvn) wd() string {
+func (m mvn) wd() string {
 	if m.POM == "" {
 		panic("pom.xml not specified")
 	}
@@ -87,7 +87,7 @@ func (m Mvn) wd() string {
 	return dir
 }
 
-func (m Mvn) getGroupArtifact(id string) string {
+func (m mvn) getGroupArtifact(id string) string {
 	split := strings.Split(id, ":")
 	return split[0] + ":" + split[1]
 }

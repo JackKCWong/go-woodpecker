@@ -60,7 +60,7 @@ var digCmd = &cobra.Command{
 			return fmt.Errorf("failed to create branch: %w", err)
 		}
 
-		updater := maven.NewPom(
+		updater := maven.NewRunner(
 			"pom.xml",
 			maven.Opts{Verbose: true},
 		)

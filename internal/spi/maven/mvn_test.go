@@ -49,7 +49,7 @@ var testDepTree = `test-project:hello-world:jar:SNAPSHOT
 `
 
 func TestMavenUpdateDependencies(t *testing.T) {
-	mvn := Mvn{
+	mvn := mvn{
 		POM: testRepo + "/pom.xml",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -70,7 +70,7 @@ func TestMavenUpdateDependencies(t *testing.T) {
 }
 
 func TestMavenDependencyTree(t *testing.T) {
-	mvn := Mvn{
+	mvn := mvn{
 		POM: testRepo + "/pom.xml",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -91,7 +91,7 @@ func TestMavenDependencyTree(t *testing.T) {
 }
 
 func TestMavenVulnerabilityReport(t *testing.T) {
-	mvn := Mvn{
+	mvn := mvn{
 		POM: testRepo + "/pom.xml",
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -125,7 +125,7 @@ func TestVulnerabilityReport(t *testing.T) {
 	vulnerable, found := depTree.MostVulnerable()
 	require.True(t, found)
 	require.Len(t, vulnerable.Nodes, 2)
-	require.Equal(t, "io.netty:netty-handler:4.1.71.Final", vulnerable.Nodes[0].ID)
+	require.Equal(t, "io.netty:netty-handler:4.1.71.Final", vulnerable.Get(0).ID)
 }
 
 func drainStdout(t *testing.T, stdout <-chan string) []string {

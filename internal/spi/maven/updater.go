@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"github.com/JackKCWong/go-woodpecker/internal/api"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -15,30 +16,31 @@ import (
 	"time"
 )
 
-type Pom struct {
+type Runner struct {
 	POM  string
-	mvn  *Mvn
+	mvn  *mvn
 	opts Opts
 }
 
 type Opts struct {
+	Output  io.Writer
 	Verbose bool
 }
 
-func NewPom(pom string, opts Opts) *Pom {
-	return &Pom{
+func NewRunner(pom string, opts Opts) *Runner {
+	return &Runner{
 		POM:  pom,
-		mvn:  &Mvn{POM: pom},
+		mvn:  &mvn{POM: pom},
 		opts: opts,
 	}
 }
 
-func (u Pom) CanContinueUpdate() bool {
+func (u Runner) CanContinueUpdate() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (u Pom) UpdateDependency(id string) error {
+func (u Runner) UpdateDependency(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -50,7 +52,7 @@ func (u Pom) UpdateDependency(id string) error {
 	return nil
 }
 
-func (u Pom) Verify() error {
+func (u Runner) Verify() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
@@ -62,7 +64,7 @@ func (u Pom) Verify() error {
 	return nil
 }
 
-func (u Pom) DependencyTree() (api.DependencyTree, error) {
+func (u Runner) DependencyTree() (api.DependencyTree, error) {
 	var tree api.DependencyTree
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -98,10 +100,8 @@ func (u Pom) DependencyTree() (api.DependencyTree, error) {
 	return tree, nil
 }
 
-func (u Pom) drainStdout(stdout <-chan string, errors <-chan error) error {
-	if u.opts.Verbose {
-		go util.DrainLines(os.Stdout, stdout)
-	}
+func (u Runner) drainStdout(stdout <-chan string, errors <-chan error) error {
+	go util.DrainLines(u.opts.Output, stdout)
 
 	err := <-errors
 	if err != nil {
@@ -111,7 +111,7 @@ func (u Pom) drainStdout(stdout <-chan string, errors <-chan error) error {
 	return nil
 }
 
-func (u Pom) loadVulnerabilityReport() (*VulnerabilityReport, error) {
+func (u Runner) loadVulnerabilityReport() (*VulnerabilityReport, error) {
 	dir, _ := path.Split(u.POM)
 	if dir == "" {
 		dir = "."
@@ -131,7 +131,7 @@ func (u Pom) loadVulnerabilityReport() (*VulnerabilityReport, error) {
 	return vr, nil
 }
 
-func (u Pom) StageUpdate() error {
+func (u Runner) StageUpdate() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
