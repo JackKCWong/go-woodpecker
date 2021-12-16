@@ -1,6 +1,6 @@
 package api
 
-type DependencyUpdater interface {
+type DependencyManager interface {
 	CanContinueUpdate() bool
 	UpdateDependency(depID string) error
 	Verify() error

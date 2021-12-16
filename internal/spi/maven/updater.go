@@ -15,30 +15,30 @@ import (
 	"time"
 )
 
-type Updater struct {
+type Pom struct {
 	POM  string
 	mvn  *Mvn
-	opts UpdaterOpts
+	opts Opts
 }
 
-type UpdaterOpts struct {
+type Opts struct {
 	Verbose bool
 }
 
-func NewUpdater(pom string, opts UpdaterOpts) *Updater {
-	return &Updater{
+func NewPom(pom string, opts Opts) *Pom {
+	return &Pom{
 		POM:  pom,
 		mvn:  &Mvn{POM: pom},
 		opts: opts,
 	}
 }
 
-func (u Updater) CanContinueUpdate() bool {
+func (u Pom) CanContinueUpdate() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (u Updater) UpdateDependency(id string) error {
+func (u Pom) UpdateDependency(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -50,7 +50,7 @@ func (u Updater) UpdateDependency(id string) error {
 	return nil
 }
 
-func (u Updater) Verify() error {
+func (u Pom) Verify() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
@@ -62,7 +62,7 @@ func (u Updater) Verify() error {
 	return nil
 }
 
-func (u Updater) DependencyTree() (api.DependencyTree, error) {
+func (u Pom) DependencyTree() (api.DependencyTree, error) {
 	var tree api.DependencyTree
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -98,7 +98,7 @@ func (u Updater) DependencyTree() (api.DependencyTree, error) {
 	return tree, nil
 }
 
-func (u Updater) drainStdout(stdout <-chan string, errors <-chan error) error {
+func (u Pom) drainStdout(stdout <-chan string, errors <-chan error) error {
 	if u.opts.Verbose {
 		go util.DrainLines(os.Stdout, stdout)
 	}
@@ -111,7 +111,7 @@ func (u Updater) drainStdout(stdout <-chan string, errors <-chan error) error {
 	return nil
 }
 
-func (u Updater) loadVulnerabilityReport() (*VulnerabilityReport, error) {
+func (u Pom) loadVulnerabilityReport() (*VulnerabilityReport, error) {
 	dir, _ := path.Split(u.POM)
 	if dir == "" {
 		dir = "."
@@ -131,7 +131,7 @@ func (u Updater) loadVulnerabilityReport() (*VulnerabilityReport, error) {
 	return vr, nil
 }
 
-func (u Updater) StageUpdate() error {
+func (u Pom) StageUpdate() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

@@ -27,8 +27,8 @@ var vulTreeCmd = &cobra.Command{
 	Aliases: []string{"ls"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		noProgress, _ := cmd.Flags().GetBool("no-progress")
-		updater := maven.NewUpdater("pom.xml",
-			maven.UpdaterOpts{
+		updater := maven.NewPom("pom.xml",
+			maven.Opts{
 				Verbose: !noProgress,
 			})
 

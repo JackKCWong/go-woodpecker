@@ -60,9 +60,9 @@ var digCmd = &cobra.Command{
 			return fmt.Errorf("failed to create branch: %w", err)
 		}
 
-		updater := maven.NewUpdater(
+		updater := maven.NewPom(
 			"pom.xml",
-			maven.UpdaterOpts{Verbose: true},
+			maven.Opts{Verbose: true},
 		)
 
 		depTree, err := updater.DependencyTree()
@@ -105,7 +105,6 @@ var digCmd = &cobra.Command{
 		}
 
 		util.Printfln(os.Stdout, "opening git repo")
-
 
 		origin, err := gitClient.Origin()
 		if err != nil {
