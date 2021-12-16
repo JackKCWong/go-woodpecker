@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/JackKCWong/go-woodpecker/internal/api"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"io"
@@ -23,8 +24,8 @@ type Runner struct {
 }
 
 type Opts struct {
-	Output  io.Writer
-	Verbose bool
+	Output               io.Writer
+	DependencyCheckProps map[string]string
 }
 
 func NewRunner(pom string, opts Opts) *Runner {
@@ -69,7 +70,13 @@ func (u Runner) DependencyTree() (api.DependencyTree, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	err := u.drainStdout(u.mvn.VulnerabilityReport(ctx))
+	props := make([]string, 0, len(u.opts.DependencyCheckProps)+1)
+	props = append(props, "-Dformat=json")
+	for k, v := range u.opts.DependencyCheckProps {
+		props = append(props, fmt.Sprintf("-D%s=%s", k, v))
+	}
+
+	err := u.drainStdout(u.mvn.DependencyCheck(ctx, props...))
 	if err != nil {
 		return tree, err
 	}

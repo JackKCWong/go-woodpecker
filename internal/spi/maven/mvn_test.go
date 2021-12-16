@@ -97,7 +97,7 @@ func TestMavenVulnerabilityReport(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	stdout, errors := mvn.VulnerabilityReport(ctx)
+	stdout, errors := mvn.DependencyCheck(ctx, "-Dformat=json", "-DretireJsAnalyzerEnabled=false")
 	_ = drainStdout(t, stdout)
 	err := <-errors
 	require.Nilf(t, err, "failed to run dependency:tree, error:%q", err)

@@ -30,8 +30,8 @@ func (m mvn) VersionCommit(ctx context.Context) (<-chan string, <-chan error) {
 	return m.mvnRun(ctx, "versions:commit")
 }
 
-func (m mvn) VulnerabilityReport(ctx context.Context) (<-chan string, <-chan error) {
-	return m.mvnRun(ctx, "org.owasp:dependency-check-maven:check", "-DretireJsAnalyzerEnabled=false", "-DprettyPrint=true", "-Dformat=json")
+func (m mvn) DependencyCheck(ctx context.Context, props ...string) (<-chan string, <-chan error) {
+	return m.mvnRun(ctx, append([]string{"org.owasp:dependency-check-maven:check"}, props...)...)
 }
 
 func (m mvn) Verify(ctx context.Context) (<-chan string, <-chan error) {

@@ -7,6 +7,7 @@ import (
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"io"
 	"os"
 	"strconv"
@@ -32,12 +33,13 @@ var vulTreeCmd = &cobra.Command{
 		noProgress, _ := cmd.Flags().GetBool("no-progress")
 		summaryMode, _ := cmd.Flags().GetBool("summary")
 
-		updater := maven.NewRunner("pom.xml",
+		depMgr := maven.NewRunner("pom.xml",
 			maven.Opts{
-				Output: newProgressOutput(verbose, noProgress),
+				Output:               newProgressOutput(verbose, noProgress),
+				DependencyCheckProps: viper.GetStringMapString("maven.dependency-check"),
 			})
 
-		tree, err := updater.DependencyTree()
+		tree, err := depMgr.DependencyTree()
 		if err != nil {
 			return err
 		}
@@ -137,6 +139,5 @@ func printVulnerabilities(w io.Writer, vuls []api.Vulnerability, padding string)
 }
 
 func init() {
-	vulTreeCmd.Flags().Bool("no-progress", false, "suppress progress spinner")
 	vulTreeCmd.Flags().BoolP("summary", "s", false, "print summary only")
 }

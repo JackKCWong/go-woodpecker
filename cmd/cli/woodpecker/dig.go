@@ -19,16 +19,12 @@ import (
 var digCmd = &cobra.Command{
 	Use:   "dig [package_id]",
 	Short: "dig out a dependency which can be upgraded to reduce vulnerabilities. package_id is in the format of groupId:artifactId:version",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return readViperConf()
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := viper.ReadInConfig(); err != nil {
-			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-				// Config file not found; ignore error
-				util.Printfln(os.Stdout, "config not found, continue...")
-			} else {
-				// Config file was found but another error was produced
-				return fmt.Errorf("failed to read config file: %w", err)
-			}
-		}
+		verbose := viper.GetBool("verbose")
+		noprogress := viper.GetBool("no-progress")
 
 		githubUrl := viper.GetString("github.url")
 		if githubUrl == "" {
@@ -60,12 +56,15 @@ var digCmd = &cobra.Command{
 			return fmt.Errorf("failed to create branch: %w", err)
 		}
 
-		updater := maven.NewRunner(
+		depMgr := maven.NewRunner(
 			"pom.xml",
-			maven.Opts{Verbose: true},
+			maven.Opts{
+				Output:               newProgressOutput(verbose, noprogress),
+				DependencyCheckProps: viper.GetStringMapString("maven.dependency-check"),
+			},
 		)
 
-		depTree, err := updater.DependencyTree()
+		depTree, err := depMgr.DependencyTree()
 		if err != nil {
 			return err
 		}
@@ -89,17 +88,17 @@ var digCmd = &cobra.Command{
 		util.Printfln(os.Stdout, strings.Repeat("-", 80))
 		util.Printfln(os.Stdout, "updating dependencies %s with %d vulnerabilities", target.Root().ID, target.VulnerabilityCount())
 		util.Printfln(os.Stdout, strings.Repeat("-", 80))
-		err = updater.UpdateDependency(target.Root().ID)
+		err = depMgr.UpdateDependency(target.Root().ID)
 		if err != nil {
 			return err
 		}
 
-		err = updater.Verify()
+		err = depMgr.Verify()
 		if err != nil {
 			return err
 		}
 
-		err = updater.StageUpdate()
+		err = depMgr.StageUpdate()
 		if err != nil {
 			return err
 		}
@@ -138,8 +137,7 @@ var digCmd = &cobra.Command{
 
 func init() {
 	digCmd.Flags().String("github-url", "", "github api url. e.g. https://api.github.com")
-	viper.BindPFlag("github.url", digCmd.Flags().Lookup("github-url"))
-
 	digCmd.Flags().String("github-accesstoken", "", "github access token")
-	viper.BindPFlag("github.accesstoken", digCmd.Flags().Lookup("github-accesstoken"))
+
+	bindCmdOptsToViperConf(digCmd.Flags())
 }
