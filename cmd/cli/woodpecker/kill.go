@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"time"
 )
 
 var killCmd = &cobra.Command{
@@ -70,10 +72,37 @@ var killCmd = &cobra.Command{
 
 		util.Printfln(os.Stdout, "commited %s", hash)
 
+		if viper.GetBool("send-pr") {
+			err := gitClient.Push()
+			if err != nil {
+				return err
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+			defer cancel()
+
+			gitHub, err := newGitHubClient()
+			if err != nil {
+				return err
+			}
+
+			origin, err := gitClient.Origin()
+			if err != nil {
+				return err
+			}
+
+			pullRequestURL, err := gitHub.CreatePullRequest(ctx, origin, viper.GetString("branch-name"), "master")
+			if err != nil {
+				return err
+			}
+
+			util.Printfln(os.Stdout, "Pull request created: %s", pullRequestURL)
+		}
+
 		return nil
 	},
 }
 
 func init() {
-	killCmd.Flags().Bool("no-pr", false, "do not creat a PR. useful for debug")
+	killCmd.Flags().Bool("send-pr", false, "Create a PR if successful.")
 }

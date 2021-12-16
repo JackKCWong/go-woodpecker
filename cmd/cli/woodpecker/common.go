@@ -5,12 +5,11 @@ import (
 	"github.com/JackKCWong/go-woodpecker/internal/spi/gitop"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/schollz/progressbar/v3"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
-	"strings"
 )
 
 func newProgressOutput() io.Writer {
@@ -22,14 +21,6 @@ func newProgressOutput() io.Writer {
 	}
 
 	return progressOut
-}
-
-// bindCmdOptsToViperConf replace '-' with '.' before binding so it can bind to nested properties more naturally
-// eg. foo-bar is bound to foo.bar
-func bindCmdOptsToViperConf(flags *pflag.FlagSet) {
-	flags.VisitAll(func(f *pflag.Flag) {
-		viper.BindPFlag(strings.ReplaceAll(f.Name, "-", "."), f)
-	})
 }
 
 func readViperConf() error {
@@ -58,5 +49,17 @@ func newGitClient() (*gitop.GitClient, error) {
 
 	return &gitop.GitClient{
 		RepoDir: dir,
+	}, nil
+}
+
+func newGitHubClient() (*gitop.GitHub, error) {
+	baseURL, err := url.Parse(viper.GetString("github.url"))
+	if err != nil {
+		return nil, err
+	}
+
+	return &gitop.GitHub{
+		BaseURL:     baseURL,
+		AccessToken: viper.GetString("github.accesstoken"),
 	}, nil
 }

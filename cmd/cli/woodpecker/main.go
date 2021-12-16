@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"os"
 	"strings"
@@ -20,15 +21,26 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().Bool("no-progress", false, "suppress progress spinner")
-	viper.BindPFlag("verbose", rootCmd.Flag("verbose"))
-	viper.BindPFlag("noprogress", rootCmd.Flag("no-progress"))
+	bindCmdOptsToViperConf(
+		rootCmd.PersistentFlags(),
+		vulTreeCmd.Flags(),
+		killCmd.Flags(),
+		digCmd.Flags(),
+	)
+	// defaults
+	viper.SetDefault("verbose", false)
+	viper.SetDefault("no-progress", false)
+	viper.SetDefault("branch-name", "woodpecker-autoupdate")
 
-	rootCmd.AddCommand(vulTreeCmd)
-	rootCmd.AddCommand(digCmd)
-	rootCmd.AddCommand(killCmd)
+	rootCmd.AddCommand(
+		vulTreeCmd,
+		digCmd,
+		killCmd,
+	)
 }
 
 func initConfig() {
+	// setup
 	viper.SetConfigName(".woodpecker")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(os.ExpandEnv("$HOME/"))
@@ -36,8 +48,17 @@ func initConfig() {
 	viper.SetEnvPrefix("WOODPECKER")
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	viper.AutomaticEnv()
+}
 
-	viper.Set("branch-name", "woodpecker-autoupdate")
+// bindCmdOptsToViperConf replace '-' with '.' before binding so it can bind to nested properties more naturally
+// eg. foo-bar is bound to foo.bar
+func bindCmdOptsToViperConf(flags ...*pflag.FlagSet) {
+	for _, f := range flags {
+		viper.BindPFlags(f)
+		f.VisitAll(func(f *pflag.Flag) {
+			viper.BindPFlag(strings.Replace(f.Name, "-", ".", 1), f)
+		})
+	}
 }
 
 func main() {

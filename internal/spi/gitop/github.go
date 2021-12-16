@@ -52,7 +52,7 @@ func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, to
 		return "", fmt.Errorf("failed to create PR: %v", resp)
 	}
 
-	return *pr.URL, nil
+	return *pr.HTMLURL, nil
 }
 
 func getRepo(repoURL string) (string, string) {

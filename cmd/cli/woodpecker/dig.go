@@ -128,7 +128,7 @@ var digCmd = &cobra.Command{
 		defer cancel()
 
 		util.Printfln(os.Stdout, "creating pull request to %s", origin)
-		pr, err := gitHub.CreatePullRequest(ctx, origin, "woodpecker-autoupdate", "master")
+		pr, err := gitHub.CreatePullRequest(ctx, origin, viper.GetString("branch-name"), "master")
 		if err != nil {
 			return err
 		}
@@ -139,8 +139,4 @@ var digCmd = &cobra.Command{
 }
 
 func init() {
-	digCmd.Flags().String("github-url", "", "github api url. e.g. https://api.github.com")
-	digCmd.Flags().String("github-accesstoken", "", "github access token")
-
-	bindCmdOptsToViperConf(digCmd.Flags())
 }
