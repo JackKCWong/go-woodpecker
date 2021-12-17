@@ -60,6 +60,22 @@ var killCmd = &cobra.Command{
 		}
 
 		util.Printfln(os.Stdout, "%s is killed.", cveID)
+		util.Printfln(os.Stdout, "start verifying...")
+		result, err := depMgr.Verify()
+		if !result.Passed {
+			if err == nil {
+				err = fmt.Errorf("unknown error")
+			}
+
+			return fmt.Errorf("verification failed: %w\n%s", err, result.Report)
+		}
+
+		if result.Report == "" {
+			util.Printfln(os.Stdout, "verification passed but you don't seem to have any test! good luck!")
+		} else {
+			util.Printfln(os.Stdout, "verification passed:\n%s", result.Report)
+		}
+
 		err = depMgr.StageUpdate()
 		if err != nil {
 			return fmt.Errorf("failed to apply change: %w", err)

@@ -89,9 +89,13 @@ var digCmd = &cobra.Command{
 			return err
 		}
 
-		err = depMgr.Verify()
+		r, err := depMgr.Verify()
 		if err != nil {
 			return err
+		}
+
+		if !r.Passed {
+			return fmt.Errorf("verification failed: \n%s", r.Report)
 		}
 
 		err = depMgr.StageUpdate()

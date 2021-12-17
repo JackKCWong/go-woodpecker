@@ -1,9 +1,11 @@
 package maven
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"github.com/go-cmd/cmd"
+	"io"
 	"path"
 	"strings"
 )
@@ -34,8 +36,47 @@ func (m mvn) DependencyCheck(ctx context.Context, props ...string) (<-chan strin
 	return m.mvnRun(ctx, append([]string{"org.owasp:dependency-check-maven:check"}, props...)...)
 }
 
-func (m mvn) Verify(ctx context.Context) (<-chan string, <-chan error) {
-	return m.mvnRun(ctx, "verify")
+func (m mvn) Verify(ctx context.Context, output io.WriteCloser) error {
+	status := m.run(ctx, output, "verify")
+	if status.Error != nil {
+		stderr := strings.Join(status.Stderr, "\n")
+		return fmt.Errorf("mvn verify failed: err %w\n%s", status.Error, stderr)
+	}
+
+	if !status.Complete {
+		return fmt.Errorf("mvn verify timeout")
+	}
+
+	if status.Exit != 0 {
+		stderr := strings.Join(status.Stderr, "\n")
+		return fmt.Errorf("mvn verify failed: exit %d\n%s", status.Exit, stderr)
+	}
+
+	return nil
+}
+
+func (m mvn) run(ctx context.Context, output io.WriteCloser, args ...string) cmd.Status {
+	goal := cmd.NewCmdOptions(cmd.Options{
+		Buffered:  false,
+		Streaming: true,
+	}, m.mvn(), append([]string{"-B"}, args...)...)
+
+	goal.Dir = m.wd()
+	done := goal.Start()
+
+	go func() {
+		for line := range goal.Stdout {
+			fmt.Fprintln(output, line)
+		}
+		output.Close()
+	}()
+
+	select {
+	case <-ctx.Done():
+		return goal.Status()
+	case status := <-done:
+		return status
+	}
 }
 
 func (m mvn) mvnRun(ctx context.Context, args ...string) (<-chan string, <-chan error) {
@@ -90,4 +131,41 @@ func (m mvn) wd() string {
 func (m mvn) getGroupArtifact(id string) string {
 	split := strings.Split(id, ":")
 	return split[0] + ":" + split[1]
+}
+
+type outputCollector interface {
+	Include(string) bool
+}
+
+func collectStdout(stdout io.Reader, collectors ...outputCollector) []string {
+	var out []string
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		for _, c := range collectors {
+			if c.Include(line) {
+				out = append(out, line)
+				break
+			}
+		}
+	}
+
+	return out
+}
+
+type testResultCollector struct {
+	started bool
+}
+
+func (c *testResultCollector) Include(line string) bool {
+	if strings.HasPrefix(line, "[INFO] Results:") {
+		c.started = true
+		return true
+	}
+
+	if c.started {
+		return strings.HasPrefix(line, "[INFO] Tests run:")
+	}
+
+	return false
 }

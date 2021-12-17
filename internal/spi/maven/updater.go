@@ -14,6 +14,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -24,7 +25,7 @@ type Runner struct {
 }
 
 type Opts struct {
-	Output               io.Writer
+	Output               io.WriteCloser
 	DependencyCheckProps map[string]string
 }
 
@@ -53,16 +54,34 @@ func (u Runner) UpdateDependency(id string) error {
 	return nil
 }
 
-func (u Runner) Verify() error {
+func (u Runner) Verify() (api.VerificationResult, error) {
+	stdoutR, stdoutW := io.Pipe()
+	report := bytes.Buffer{}
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		r := collectStdout(stdoutR, new(testResultCollector))
+		report.WriteString(strings.Join(r, "\n"))
+	}()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
-	err := u.drainStdout(u.mvn.Verify(ctx))
+	err := u.mvn.Verify(ctx, util.MultiWriteCloser(stdoutW, u.opts.Output))
+	wg.Wait()
+
 	if err != nil {
-		return err
+		return api.VerificationResult{
+			Passed: false,
+			Report: report.String(),
+		}, err
 	}
 
-	return nil
+	return api.VerificationResult{
+		Passed: true,
+		Report: report.String(),
+	}, nil
 }
 
 func (u Runner) DependencyTree() (api.DependencyTree, error) {

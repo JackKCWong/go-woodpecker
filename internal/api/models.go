@@ -3,9 +3,14 @@ package api
 type DependencyManager interface {
 	CanContinueUpdate() bool
 	UpdateDependency(depID string) error
-	Verify() error
+	Verify() (VerificationResult, error)
 	StageUpdate() error
 	DependencyTree() (DependencyTree, error)
+}
+
+type VerificationResult struct {
+	Passed bool
+	Report string
 }
 
 type DependencyTree struct {

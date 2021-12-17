@@ -7,17 +7,18 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/viper"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 )
 
-func newProgressOutput() io.Writer {
-	var progressOut = ioutil.Discard
+func newProgressOutput() io.WriteCloser {
+	var progressOut io.WriteCloser
 	if viper.GetBool("verbose") {
 		progressOut = os.Stdout
 	} else if !viper.GetBool("noprogress") {
 		progressOut = progressbar.DefaultBytes(-1, "working hard...")
+	} else {
+		progressOut = util.Discard
 	}
 
 	return progressOut
