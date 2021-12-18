@@ -11,6 +11,7 @@ Give developers the last-mile help in fixing vulnerabilities
 ```bash
 woodpecker -h
 woodpecker tree # shows depedency tree with vulnerabilities
+woodpecker kill cve_id # updates the dependency until the cve_id is fixed
 ```
 
 ## Maven projects (TODO)
@@ -29,4 +30,12 @@ Basically it simply does the following:
 
 ## Caveats
 [ ] multi-modules project
+
 [ ] dependency suite (dependencies share the same version)
+
+
+# License
+
+[//]: # ( Path: LICENSE
+[//]: # ( Language: Markdown
+[//]: # ( Path: LICENSE
