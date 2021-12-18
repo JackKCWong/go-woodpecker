@@ -37,7 +37,7 @@ var vulTreeCmd = &cobra.Command{
 		depMgr := maven.NewRunner("pom.xml",
 			maven.Opts{
 				Output:               newProgressOutput(),
-				DependencyCheckProps: viper.GetStringMapString("maven.dependency-check"),
+				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),
 			})
 
 		tree, err := depMgr.DependencyTree()

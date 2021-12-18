@@ -25,7 +25,7 @@ func (m mvn) DependencyUpdate(ctx context.Context, includes ...string) (<-chan s
 }
 
 func (m mvn) DependencyTree(ctx context.Context, outFile string) (<-chan string, <-chan error) {
-	return m.mvnRun(ctx, "dependency:tree", "-DoutputFile="+outFile)
+	return m.mvnRun(ctx, "dependency:tree", "-DoutputFile="+outFile, "-DappendOutput=true")
 }
 
 func (m mvn) VersionCommit(ctx context.Context) (<-chan string, <-chan error) {
@@ -33,7 +33,7 @@ func (m mvn) VersionCommit(ctx context.Context) (<-chan string, <-chan error) {
 }
 
 func (m mvn) DependencyCheck(ctx context.Context, props ...string) (<-chan string, <-chan error) {
-	return m.mvnRun(ctx, append([]string{"org.owasp:dependency-check-maven:check"}, props...)...)
+	return m.mvnRun(ctx, append([]string{"org.owasp:dependency-check-maven:aggregate"}, props...)...)
 }
 
 func (m mvn) Verify(ctx context.Context, output io.WriteCloser) error {

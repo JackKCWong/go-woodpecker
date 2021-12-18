@@ -26,7 +26,7 @@ type Runner struct {
 
 type Opts struct {
 	Output               io.WriteCloser
-	DependencyCheckProps map[string]string
+	DependencyCheckProps []string
 }
 
 func NewRunner(pom string, opts Opts) *Runner {
@@ -91,8 +91,8 @@ func (u Runner) DependencyTree() (api.DependencyTree, error) {
 
 	props := make([]string, 0, len(u.opts.DependencyCheckProps)+1)
 	props = append(props, "-Dformat=json")
-	for k, v := range u.opts.DependencyCheckProps {
-		props = append(props, fmt.Sprintf("-D%s=%s", k, v))
+	for _, v := range u.opts.DependencyCheckProps {
+		props = append(props, fmt.Sprintf("-D%s", v))
 	}
 
 	err := u.drainStdout(u.mvn.DependencyCheck(ctx, props...))
