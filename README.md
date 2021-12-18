@@ -4,7 +4,7 @@ Give developers the last-mile help in fixing vulnerabilities
 
 ## prerequisites
 
-* Maven v3.0.0+
+* Maven v3.1.0+ (required by [Maven Dependency-Check Plugin](https://jeremylong.github.io/DependencyCheck/dependency-check-maven/index.html)
 
 ## commands
 
@@ -36,6 +36,4 @@ Basically it simply does the following:
 
 # License
 
-[//]: # ( Path: LICENSE
-[//]: # ( Language: Markdown
-[//]: # ( Path: LICENSE
+[MIT](https://github.com/JackKCWong/go-woodpecker/blob/main/LICENSE)
