@@ -34,7 +34,7 @@ func init() {
 
 	rootCmd.AddCommand(
 		vulTreeCmd,
-		digCmd,
+		//digCmd,
 		killCmd,
 	)
 }
@@ -54,7 +54,7 @@ func initConfig() {
 // eg. foo-bar is bound to foo.bar
 func bindCmdOptsToViperConf(flags ...*pflag.FlagSet) {
 	for _, f := range flags {
-		viper.BindPFlags(f)
+		_ = viper.BindPFlags(f)
 		f.VisitAll(func(f *pflag.Flag) {
 			viper.BindPFlag(strings.Replace(f.Name, "-", ".", 1), f)
 		})
