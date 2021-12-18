@@ -69,7 +69,7 @@ var digCmd = &cobra.Command{
 		var found bool
 		if len(args) > 0 {
 			packageID := args[0]
-			target, found = depTree.Subtree(packageID)
+			target, found = depTree.Subtree(0, packageID)
 			if !found {
 				return fmt.Errorf("package %s not found", packageID)
 			}

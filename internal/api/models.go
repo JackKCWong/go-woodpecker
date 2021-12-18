@@ -75,11 +75,12 @@ func (t DependencyTree) AllVulnerabilities() []Vulnerability {
 	return all
 }
 
-func (t DependencyTree) Subtree(rootID string) (DependencyTree, bool) {
+func (t DependencyTree) Subtree(i int, rootID string) (DependencyTree, bool) {
 	var found bool
 	var subtree []DependencyTreeNode
-	for _, n := range t.Nodes() {
-		if n.ID == rootID {
+	for j := i; j < len(t.Nodes()); j++ {
+		n := t.Get(j)
+		if n.ID == rootID && n.Depth == 1 {
 			found = true
 			subtree = append(subtree, n)
 			continue
@@ -157,9 +158,9 @@ func (t DependencyTree) VulnerabilityCount() int {
 }
 
 func (t DependencyTree) FindCVE(cveID string) (DependencyTree, bool) {
-	for _, n := range t.Nodes() {
+	for i, n := range t.Nodes() {
 		if n.Depth == 1 {
-			subtree, _ := t.Subtree(n.ID)
+			subtree, _ := t.Subtree(i, n.ID)
 			for _, v := range subtree.AllVulnerabilities() {
 				if v.ID == cveID {
 					return subtree, true

@@ -58,13 +58,13 @@ var vulTreeCmd = &cobra.Command{
 
 func printSummary(w io.Writer, tree api.DependencyTree) {
 	util.Printfln(w, "%s", tree.Root().ID)
-	for _, n := range tree.Nodes() {
+	for i, n := range tree.Nodes() {
 		if n.Scope == "test" {
 			continue
 		}
 
 		if n.Depth == 1 {
-			subtree, _ := tree.Subtree(n.ID)
+			subtree, _ := tree.Subtree(i, n.ID)
 			nColor := cNode
 			prefix := ""
 			suffix := ""
@@ -84,7 +84,7 @@ func printSummary(w io.Writer, tree api.DependencyTree) {
 }
 
 func printTree(w io.Writer, tree api.DependencyTree) {
-	for _, n := range tree.Nodes() {
+	for i, n := range tree.Nodes() {
 		if n.Scope == "test" {
 			continue
 		}
@@ -95,7 +95,7 @@ func printTree(w io.Writer, tree api.DependencyTree) {
 		suffix := ""
 
 		if n.Depth == 1 {
-			subtree, _ := tree.Subtree(n.ID)
+			subtree, _ := tree.Subtree(i, n.ID)
 			if subtree.VulnerabilityCount() > 0 {
 				nColor = cShouldUpdate
 				suffix = "\t\t(" + strconv.Itoa(subtree.VulnerabilityCount()) + " vulnerabilities)"
