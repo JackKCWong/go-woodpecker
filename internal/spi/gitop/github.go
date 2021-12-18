@@ -14,7 +14,9 @@ type GitHub struct {
 	AccessToken string
 }
 
-func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, toBranch string) (string, error) {
+func (c GitHub) CreatePullRequest(ctx context.Context,
+	remoteURL, fromBranch, toBranch string,
+	title, body string) (string, error) {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: c.AccessToken},
 	)
@@ -33,8 +35,8 @@ func (c GitHub) CreatePullRequest(ctx context.Context, remoteURL, fromBranch, to
 	}
 
 	npr := github.NewPullRequest{
-		Title:               github.String("auto update dependencies"),
-		Body:                github.String("this request is created by Woodpecker"),
+		Title:               github.String(title),
+		Body:                github.String(body),
 		Head:                github.String(fromBranch),
 		Base:                github.String(toBranch),
 		MaintainerCanModify: github.Bool(true),

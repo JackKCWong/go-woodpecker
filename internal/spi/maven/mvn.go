@@ -68,7 +68,7 @@ func (m mvn) run(ctx context.Context, output io.WriteCloser, args ...string) cmd
 		for line := range goal.Stdout {
 			fmt.Fprintln(output, line)
 		}
-		output.Close()
+		_ = output.Close()
 	}()
 
 	select {
@@ -160,7 +160,7 @@ type testResultCollector struct {
 func (c *testResultCollector) Include(line string) bool {
 	if strings.HasPrefix(line, "[INFO] Results:") {
 		c.started = true
-		return true
+		return false
 	}
 
 	if c.started {

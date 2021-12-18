@@ -132,7 +132,10 @@ var digCmd = &cobra.Command{
 		defer cancel()
 
 		util.Printfln(os.Stdout, "creating pull request to %s", origin)
-		pr, err := gitHub.CreatePullRequest(ctx, origin, viper.GetString("branch-name"), "master")
+		pr, err := gitHub.CreatePullRequest(ctx,
+			origin, viper.GetString("branch-name"), "master",
+			"upgrading "+target.Root().ID, r.Report)
+
 		if err != nil {
 			return err
 		}

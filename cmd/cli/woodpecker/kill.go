@@ -25,7 +25,8 @@ var killCmd = &cobra.Command{
 			return err
 		}
 
-		err = gitClient.CreateBranch(viper.GetString("branch-name"))
+		newBrachName := viper.GetString("branch-name")
+		err = gitClient.CreateBranch(newBrachName)
 		if err != nil {
 			return err
 		}
@@ -70,10 +71,13 @@ var killCmd = &cobra.Command{
 			return fmt.Errorf("verification failed: %w\n%s", err, result.Report)
 		}
 
+		var prMessage string
 		if result.Report == "" {
-			util.Printfln(os.Stdout, "verification passed but you don't seem to have any test! good luck!")
+			prMessage = "verification passed but you don't seem to have any test! good luck!"
+			util.Printfln(os.Stdout, prMessage)
 		} else {
-			util.Printfln(os.Stdout, "verification passed:\n%s", result.Report)
+			prMessage = fmt.Sprintf("verification passed: \n%s", result.Report)
+			util.Printfln(os.Stdout, prMessage)
 		}
 
 		err = depMgr.StageUpdate()
@@ -81,7 +85,8 @@ var killCmd = &cobra.Command{
 			return fmt.Errorf("failed to apply change: %w", err)
 		}
 
-		hash, err := gitClient.Commit("removing " + cveID + " in " + originalPackageID)
+		commitMessage := "removing " + cveID + " in " + originalPackageID
+		hash, err := gitClient.Commit(commitMessage)
 		if err != nil {
 			return err
 		}
@@ -107,7 +112,10 @@ var killCmd = &cobra.Command{
 				return err
 			}
 
-			pullRequestURL, err := gitHub.CreatePullRequest(ctx, origin, viper.GetString("branch-name"), "master")
+			pullRequestURL, err := gitHub.CreatePullRequest(ctx,
+				origin, newBrachName, "master",
+				commitMessage, prMessage)
+
 			if err != nil {
 				return err
 			}

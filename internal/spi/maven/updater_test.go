@@ -38,6 +38,5 @@ func Test_Verify(t *testing.T) {
 	require.Nil(t, err)
 
 	require.True(t, result.Passed)
-	require.Contains(t, "[INFO] Results:", result.Report)
 	require.Contains(t, "[INFO] Tests run:", result.Report)
 }

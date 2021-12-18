@@ -36,6 +36,7 @@ func TestGitHub_CreatePullRequest(t *testing.T) {
 	gh := GitHub{AccessToken: token}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	_, err := gh.CreatePullRequest(ctx, "git@github.com:JackKCWong/app-runner.git", "update-deps", "master")
+	_, err := gh.CreatePullRequest(ctx, "git@github.com:JackKCWong/app-runner.git", "update-deps", "master",
+		"DO NOT MERGE", "unit test")
 	require.Nilf(t, err, "failed to create PR: %q", err)
 }
