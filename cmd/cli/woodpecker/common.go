@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"time"
 )
 
 func newProgressOutput() io.WriteCloser {
@@ -16,7 +17,21 @@ func newProgressOutput() io.WriteCloser {
 	if viper.GetBool("verbose") {
 		progressOut = os.Stdout
 	} else if !viper.GetBool("noprogress") {
-		progressOut = progressbar.DefaultBytes(-1, "working hard...")
+		bar := progressbar.NewOptions64(-1,
+			progressbar.OptionSetDescription("working hard..."),
+			progressbar.OptionSetWriter(os.Stderr),
+			progressbar.OptionShowCount(),
+			progressbar.OptionSetWidth(10),
+			progressbar.OptionClearOnFinish(),
+			progressbar.OptionThrottle(65*time.Millisecond),
+			progressbar.OptionOnCompletion(func() {
+				_, _ = fmt.Fprint(os.Stderr, "\n")
+			}),
+			progressbar.OptionSpinnerType(14),
+			progressbar.OptionFullWidth(),
+		)
+		_ = bar.RenderBlank()
+		progressOut = bar
 	} else {
 		progressOut = util.Discard
 	}
