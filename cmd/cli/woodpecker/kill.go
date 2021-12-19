@@ -7,7 +7,9 @@ import (
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -20,6 +22,16 @@ var killCmd = &cobra.Command{
 		return readViperConf()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		pomPath := "pom.xml"
+		pomXml, err := ioutil.ReadFile(pomPath)
+		if err != nil {
+			return fmt.Errorf("failed to read pom.xml in current wd: %w", err)
+		}
+
+		if strings.Contains(string(pomXml), "<packaging>pom</packaging>") {
+			return fmt.Errorf("kill does not work on the parent project. Please run it on the child project")
+		}
+
 		gitClient, err := newGitClient()
 		if err != nil {
 			return err
