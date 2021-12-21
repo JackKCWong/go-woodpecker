@@ -29,7 +29,6 @@ type DependencyTreeNode struct {
 	Depth           int
 	Raw             string
 	PackageUrl      string
-	ShouldUpdate    bool
 	Vulnerabilities []Vulnerability
 }
 

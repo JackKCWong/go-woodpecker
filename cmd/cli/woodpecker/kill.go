@@ -57,6 +57,7 @@ var killCmd = &cobra.Command{
 		cveID := args[0]
 		subtree, found := tree.FindCVE(cveID)
 		originalPackageID := subtree.Root().ID
+		lastPackageID := originalPackageID
 		for found {
 			util.Printfln(os.Stdout, "%s found in %s, upgrading...", cveID, subtree.Root().ID)
 			err := depMgr.UpdateDependency(subtree.Root().ID)
@@ -70,6 +71,14 @@ var killCmd = &cobra.Command{
 			}
 
 			subtree, found = newTree.FindCVE(cveID)
+			if found {
+				if lastPackageID == subtree.Root().ID {
+					util.Printfln(os.Stdout, "already the latest version: %s, exiting...", subtree.Root().ID)
+					return fmt.Errorf("no version available without %s", cveID)
+				}
+
+				lastPackageID = subtree.Root().ID
+			}
 		}
 
 		util.Printfln(os.Stdout, "%s is killed.", cveID)
@@ -83,13 +92,13 @@ var killCmd = &cobra.Command{
 			return fmt.Errorf("verification failed: %w\n%s", err, result.Report)
 		}
 
-		var prMessage string
+		var verificationResult string
 		if result.Report == "" {
-			prMessage = "verification passed but you don't seem to have any test! good luck!"
-			util.Printfln(os.Stdout, prMessage)
+			verificationResult = "verification passed but you don't seem to have any test! good luck!"
+			util.Printfln(os.Stdout, verificationResult)
 		} else {
-			prMessage = fmt.Sprintf("verification passed: \n%s", result.Report)
-			util.Printfln(os.Stdout, prMessage)
+			verificationResult = fmt.Sprintf("verification passed: \n%s", result.Report)
+			util.Printfln(os.Stdout, verificationResult)
 		}
 
 		err = depMgr.StageUpdate()
@@ -126,7 +135,8 @@ var killCmd = &cobra.Command{
 
 			pullRequestURL, err := gitHub.CreatePullRequest(ctx,
 				origin, newBrachName, "master",
-				commitMessage, prMessage)
+				commitMessage,
+				fmt.Sprintf("update from %s to %s, result:\n%s", originalPackageID, lastPackageID, verificationResult))
 
 			if err != nil {
 				return err
