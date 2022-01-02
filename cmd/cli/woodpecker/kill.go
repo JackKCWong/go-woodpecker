@@ -43,7 +43,7 @@ var killCmd = &cobra.Command{
 			return err
 		}
 
-		depMgr := maven.NewRunner("pom.xml",
+		depMgr := maven.New("pom.xml",
 			maven.Opts{
 				Output:               newProgressOutput(),
 				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),
@@ -89,15 +89,15 @@ var killCmd = &cobra.Command{
 				err = fmt.Errorf("unknown error")
 			}
 
-			return fmt.Errorf("verification failed: %w\n%s", err, result.Report)
+			return fmt.Errorf("verification failed: %w\n%s", err, result.Summary)
 		}
 
 		var verificationResult string
-		if result.Report == "" {
+		if result.Summary == "" {
 			verificationResult = "verification passed but you don't seem to have any test! good luck!"
 			util.Printfln(os.Stdout, verificationResult)
 		} else {
-			verificationResult = fmt.Sprintf("verification passed: \n%s", result.Report)
+			verificationResult = fmt.Sprintf("verification passed: \n%s", result.Summary)
 			util.Printfln(os.Stdout, verificationResult)
 		}
 

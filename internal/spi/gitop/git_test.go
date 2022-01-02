@@ -16,20 +16,20 @@ func init() {
 		testRepo = os.ExpandEnv("$HOME/Workspace/repos/mu-server")
 	}
 }
-func TestGitClient_CommitAndPush(t *testing.T) {
+func xTestGitClient_CommitAndPush(t *testing.T) {
 	gitClient := GitClient{RepoDir: testRepo}
 	commit, err := gitClient.Commit("auto update dependencies")
 	require.NotEmptyf(t, commit, "failed to commit: %q", err)
 }
 
-func TestGitClient_Origin(t *testing.T) {
+func xTestGitClient_Origin(t *testing.T) {
 	gitClient := GitClient{RepoDir: testRepo}
 	origin, err := gitClient.Origin()
 	require.Nil(t, err)
 	require.Equal(t, "git@github.com:3redronin/mu-server.git", origin)
 }
 
-func TestGitHub_CreatePullRequest(t *testing.T) {
+func xTestGitHub_CreatePullRequest(t *testing.T) {
 	token := os.Getenv("WOODPECKER_GITHUB_TOKEN")
 	require.NotEmpty(t, token, "WOODPECKER_TOKEN is not defined")
 

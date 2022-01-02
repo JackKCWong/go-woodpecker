@@ -34,7 +34,7 @@ var vulTreeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		summaryMode, _ := cmd.Flags().GetBool("summary")
 
-		depMgr := maven.NewRunner("pom.xml",
+		depMgr := maven.New("pom.xml",
 			maven.Opts{
 				Output:               newProgressOutput(),
 				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),

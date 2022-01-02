@@ -1,16 +1,17 @@
 package api
 
 type DependencyManager interface {
-	CanContinueUpdate() bool
+	ContinueUpdate() bool
 	UpdateDependency(depID string) error
-	Verify() (VerificationResult, error)
+	Verify() (TestReport, error)
 	StageUpdate() error
 	DependencyTree() (DependencyTree, error)
 }
 
-type VerificationResult struct {
-	Passed bool
-	Report string
+type TestReport struct {
+	Passed  bool
+	Summary string
+	Error   string
 }
 
 type DependencyTree struct {

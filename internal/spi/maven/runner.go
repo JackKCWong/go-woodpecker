@@ -7,20 +7,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/internal/api"
-	"github.com/JackKCWong/go-woodpecker/internal/util"
+	"github.com/JackKCWong/go-woodpecker/internal/spi"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 )
 
 type Runner struct {
 	POM  string
-	mvn  *mvn
+	mvn  spi.TaskRunner
 	opts Opts
 }
 
@@ -29,24 +28,32 @@ type Opts struct {
 	DependencyCheckProps []string
 }
 
-func NewRunner(pom string, opts Opts) *Runner {
+func New(pom string, opts Opts) api.DependencyManager {
 	return &Runner{
 		POM:  pom,
-		mvn:  &mvn{POM: pom},
+		mvn:  mvn{POM: pom},
 		opts: opts,
 	}
 }
 
-func (u Runner) CanContinueUpdate() bool {
+func (u Runner) ContinueUpdate() bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (u Runner) UpdateDependency(id string) error {
+func (u Runner) UpdateDependency(depID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	err := u.drainStdout(u.mvn.DependencyUpdate(ctx, id))
+	var artifacts []string
+	artifacts = append(artifacts, getGroupArtifact(depID))
+
+	out, err := u.mvn.Run(ctx, "versions:use-next-releases", "-Dincludes="+strings.Join(artifacts, ","))
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(u.opts.Output, out)
 	if err != nil {
 		return err
 	}
@@ -54,33 +61,23 @@ func (u Runner) UpdateDependency(id string) error {
 	return nil
 }
 
-func (u Runner) Verify() (api.VerificationResult, error) {
-	stdoutR, stdoutW := io.Pipe()
-	report := bytes.Buffer{}
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		r := collectStdout(stdoutR, new(testResultCollector))
-		report.WriteString(strings.Join(r, "\n"))
-	}()
-
+func (u Runner) Verify() (api.TestReport, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
-	err := u.mvn.Verify(ctx, util.MultiWriteCloser(stdoutW, u.opts.Output))
-	wg.Wait()
+	stdout, err := u.mvn.Run(ctx, "verify")
+	report := collectStdout(stdout, new(testResultCollector))
 
 	if err != nil {
-		return api.VerificationResult{
-			Passed: false,
-			Report: report.String(),
+		return api.TestReport{
+			Passed:  false,
+			Summary: strings.Join(report, "\n"),
 		}, err
 	}
 
-	return api.VerificationResult{
-		Passed: true,
-		Report: report.String(),
+	return api.TestReport{
+		Passed:  true,
+		Summary: strings.Join(report, "\n"),
 	}, nil
 }
 
@@ -90,27 +87,31 @@ func (u Runner) DependencyTree() (api.DependencyTree, error) {
 	defer cancel()
 
 	props := make([]string, 0, len(u.opts.DependencyCheckProps)+1)
-	props = append(props, "-Dformat=json")
+	props = append(props, "-Dformats=json,html")
 	for _, v := range u.opts.DependencyCheckProps {
 		props = append(props, fmt.Sprintf("-D%s", v))
 	}
 
-	err := u.drainStdout(u.mvn.DependencyCheck(ctx, props...))
+	stdout, err := u.mvn.Run(ctx, "org.owasp:dependency-check-maven:aggregate", props...)
 	if err != nil {
 		return tree, err
 	}
 
-	temp, err := os.CreateTemp(os.TempDir(), "dtree")
+	_, _ = io.Copy(u.opts.Output, stdout)
+
+	tempFile, err := os.CreateTemp(path.Join(u.mvn.Wd(), "target"), "woodpecker-maven-dependency-tree")
 	if err != nil {
 		return tree, err
 	}
 
-	err = u.drainStdout(u.mvn.DependencyTree(ctx, temp.Name()))
+	stdout, err = u.mvn.Run(ctx, "dependency:tree", "-DoutputFile="+tempFile.Name(), "-DappendOutput=true")
 	if err != nil {
 		return tree, err
 	}
 
-	treeInBytes, err := ioutil.ReadFile(temp.Name())
+	_, _ = io.Copy(u.opts.Output, stdout)
+
+	treeInBytes, err := ioutil.ReadFile(tempFile.Name())
 	if err != nil {
 		return tree, err
 	}
@@ -126,24 +127,8 @@ func (u Runner) DependencyTree() (api.DependencyTree, error) {
 	return tree, nil
 }
 
-func (u Runner) drainStdout(stdout <-chan string, errors <-chan error) error {
-	go util.DrainLines(u.opts.Output, stdout)
-
-	err := <-errors
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (u Runner) loadVulnerabilityReport() (*VulnerabilityReport, error) {
-	dir, _ := path.Split(u.POM)
-	if dir == "" {
-		dir = "."
-	}
-
-	report, err := ioutil.ReadFile(dir + "/target/dependency-check-report.json")
+	report, err := ioutil.ReadFile(u.mvn.Wd() + "/target/dependency-check-report.json")
 	if err != nil {
 		return nil, err
 	}
@@ -161,10 +146,12 @@ func (u Runner) StageUpdate() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err := u.drainStdout(u.mvn.VersionCommit(ctx))
+	stdout, err := u.mvn.Run(ctx, "versions:commit")
 	if err != nil {
 		return err
 	}
+
+	_, _ = io.Copy(u.opts.Output, stdout)
 
 	return nil
 }
@@ -239,4 +226,46 @@ func filterDeps(deps []Dependency, f func(d Dependency) bool) []Dependency {
 	}
 
 	return result
+}
+
+func getGroupArtifact(id string) string {
+	split := strings.Split(id, ":")
+	return split[0] + ":" + split[1]
+}
+
+type outputCollector interface {
+	Include(string) bool
+}
+
+func collectStdout(stdout io.Reader, collectors ...outputCollector) []string {
+	var out []string
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		for _, c := range collectors {
+			if c.Include(line) {
+				out = append(out, line)
+				break
+			}
+		}
+	}
+
+	return out
+}
+
+type testResultCollector struct {
+	started bool
+}
+
+func (c *testResultCollector) Include(line string) bool {
+	if strings.HasPrefix(line, "[INFO] Results:") {
+		c.started = true
+		return false
+	}
+
+	if c.started {
+		return strings.HasPrefix(line, "[INFO] Tests run:")
+	}
+
+	return false
 }

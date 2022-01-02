@@ -52,7 +52,7 @@ var digCmd = &cobra.Command{
 			return fmt.Errorf("failed to create branch: %w", err)
 		}
 
-		depMgr := maven.NewRunner(
+		depMgr := maven.New(
 			"pom.xml",
 			maven.Opts{
 				Output:               newProgressOutput(),
@@ -95,7 +95,7 @@ var digCmd = &cobra.Command{
 		}
 
 		if !r.Passed {
-			return fmt.Errorf("verification failed: \n%s", r.Report)
+			return fmt.Errorf("verification failed: \n%s", r.Summary)
 		}
 
 		err = depMgr.StageUpdate()
@@ -134,7 +134,7 @@ var digCmd = &cobra.Command{
 		util.Printfln(os.Stdout, "creating pull request to %s", origin)
 		pr, err := gitHub.CreatePullRequest(ctx,
 			origin, viper.GetString("branch-name"), "master",
-			"upgrading "+target.Root().ID, r.Report)
+			"upgrading "+target.Root().ID, r.Summary)
 
 		if err != nil {
 			return err
@@ -143,7 +143,4 @@ var digCmd = &cobra.Command{
 		util.Printfln(os.Stdout, "pull request created: %s", pr)
 		return nil
 	},
-}
-
-func init() {
 }
