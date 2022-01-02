@@ -1,18 +1,22 @@
-package main
+package config
 
 import (
+	"errors"
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/gitop"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
+	"github.com/JackKCWong/go-woodpecker/spi"
+	"github.com/JackKCWong/go-woodpecker/spi/impl/github"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/viper"
 	"io"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
-func newProgressOutput() io.WriteCloser {
+func NewProgressOutput() io.WriteCloser {
 	var progressOut io.WriteCloser
 	if viper.GetBool("verbose") {
 		progressOut = os.Stdout
@@ -39,7 +43,7 @@ func newProgressOutput() io.WriteCloser {
 	return progressOut
 }
 
-func readViperConf() error {
+func ReadConfigFile() error {
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found; ignore error
@@ -53,7 +57,7 @@ func readViperConf() error {
 	return nil
 }
 
-func newGitClient() (*gitop.GitClient, error) {
+func NewGitClient() (spi.GitClient, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, err
@@ -68,14 +72,28 @@ func newGitClient() (*gitop.GitClient, error) {
 	}, nil
 }
 
-func newGitHubClient() (*gitop.GitHub, error) {
-	baseURL, err := url.Parse(viper.GetString("github.url"))
-	if err != nil {
-		return nil, err
+func NewGitHub() (spi.GitServer, error) {
+	apiUrlStr := viper.GetString("github.api-url")
+	if apiUrlStr == "" {
+		return nil, errors.New("github.api-url is not set")
 	}
 
-	return &gitop.GitHub{
-		BaseURL:     baseURL,
-		AccessToken: viper.GetString("github.accesstoken"),
+	if !strings.HasSuffix(apiUrlStr, "/") {
+		apiUrlStr += "/"
+	}
+
+	apiURL, err := url.Parse(apiUrlStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse github.api-url: %w", err)
+	}
+
+	accessToken := viper.GetString("github.access-token")
+	if accessToken == "" {
+		return nil, errors.New("github.access-token is not set")
+	}
+
+	return &github.GitHub{
+		ApiURL:      apiURL,
+		AccessToken: accessToken,
 	}, nil
 }

@@ -7,6 +7,7 @@ import (
 
 type GitClient interface {
 	Clone(ctx context.Context, url string) error
+	Origin() (string, error)
 	Branch(name string) error
 	Commit(msg string) (string, error)
 	Push(ctx context.Context) error

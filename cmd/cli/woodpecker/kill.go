@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/JackKCWong/go-woodpecker/cmd/cli/config"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/spf13/cobra"
@@ -19,7 +20,7 @@ var killCmd = &cobra.Command{
 	Long:  "Update dependency version until the given CVE disappears and number of critical vulnerabilities drops",
 	Args:  cobra.MinimumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return readViperConf()
+		return config.ReadConfigFile()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		pomPath := "pom.xml"
@@ -32,7 +33,7 @@ var killCmd = &cobra.Command{
 			return fmt.Errorf("kill does not work on the parent project. Please run it on the child project")
 		}
 
-		gitClient, err := newGitClient()
+		gitClient, err := config.NewGitClient()
 		if err != nil {
 			return err
 		}
@@ -45,7 +46,7 @@ var killCmd = &cobra.Command{
 
 		depMgr := maven.New("pom.xml",
 			maven.Opts{
-				Output:               newProgressOutput(),
+				Output:               config.NewProgressOutput(),
 				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),
 			})
 
@@ -123,7 +124,7 @@ var killCmd = &cobra.Command{
 				return err
 			}
 
-			gitHub, err := newGitHubClient()
+			gitHub, err := config.NewGitHub()
 			if err != nil {
 				return err
 			}

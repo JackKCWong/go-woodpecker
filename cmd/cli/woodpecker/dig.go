@@ -2,15 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/api"
-	"github.com/JackKCWong/go-woodpecker/internal/spi/gitop"
+	"github.com/JackKCWong/go-woodpecker/cmd/cli/config"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -20,29 +18,15 @@ var digCmd = &cobra.Command{
 	Use:   "dig [package_id]",
 	Short: "dig out a dependency which can be upgraded to reduce vulnerabilities. package_id is in the format of groupId:artifactId:version",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return readViperConf()
+		return config.ReadConfigFile()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		githubUrl := viper.GetString("github.url")
-		if githubUrl == "" {
-			return errors.New("github.url is not set")
-		}
-
-		if !strings.HasSuffix(githubUrl, "/") {
-			githubUrl += "/"
-		}
-
-		githubURL, err := url.Parse(githubUrl)
+		gitHub, err := config.NewGitHub()
 		if err != nil {
-			return fmt.Errorf("github.url is not a valid url: %w", err)
+			return err
 		}
 
-		githubToken := viper.GetString("github.accesstoken")
-		if githubToken == "" {
-			return errors.New("github.accesstoken is not set")
-		}
-
-		gitClient, err := newGitClient()
+		gitClient, err := config.NewGitClient()
 		if err != nil {
 			return err
 		}
@@ -55,7 +39,7 @@ var digCmd = &cobra.Command{
 		depMgr := maven.New(
 			"pom.xml",
 			maven.Opts{
-				Output:               newProgressOutput(),
+				Output:               config.NewProgressOutput(),
 				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),
 			},
 		)
@@ -124,11 +108,6 @@ var digCmd = &cobra.Command{
 		err = gitClient.Push(ctx)
 		if err != nil {
 			return err
-		}
-
-		gitHub := gitop.GitHub{
-			BaseURL:     githubURL,
-			AccessToken: githubToken,
 		}
 
 		util.Printfln(os.Stdout, "creating pull request to %s", origin)

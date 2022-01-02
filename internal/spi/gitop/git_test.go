@@ -2,6 +2,7 @@ package gitop
 
 import (
 	"context"
+	"github.com/JackKCWong/go-woodpecker/spi/impl/github"
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
@@ -33,7 +34,7 @@ func xTestGitHub_CreatePullRequest(t *testing.T) {
 	token := os.Getenv("WOODPECKER_GITHUB_TOKEN")
 	require.NotEmpty(t, token, "WOODPECKER_TOKEN is not defined")
 
-	gh := GitHub{AccessToken: token}
+	gh := github.GitHub{AccessToken: token}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	_, err := gh.CreatePullRequest(ctx, "git@github.com:JackKCWong/app-runner.git", "update-deps", "master",

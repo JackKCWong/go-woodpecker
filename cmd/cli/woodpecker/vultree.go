@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/api"
+	"github.com/JackKCWong/go-woodpecker/cmd/cli/config"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/fatih/color"
@@ -29,14 +30,14 @@ var vulTreeCmd = &cobra.Command{
 	Short:   "Print dependency tree with CVEs",
 	Aliases: []string{"ls"},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return readViperConf()
+		return config.ReadConfigFile()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		summaryMode, _ := cmd.Flags().GetBool("summary")
 
 		depMgr := maven.New("pom.xml",
 			maven.Opts{
-				Output:               newProgressOutput(),
+				Output:               config.NewProgressOutput(),
 				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),
 			})
 
