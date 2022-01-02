@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/JackKCWong/go-woodpecker/internal/api"
+	"github.com/JackKCWong/go-woodpecker/api"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/fatih/color"

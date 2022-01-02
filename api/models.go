@@ -1,7 +1,6 @@
 package api
 
 type DependencyManager interface {
-	ContinueUpdate() bool
 	UpdateDependency(depID string) error
 	Verify() (TestReport, error)
 	StageUpdate() error

@@ -38,7 +38,7 @@ var killCmd = &cobra.Command{
 		}
 
 		newBrachName := viper.GetString("branch-name")
-		err = gitClient.CreateBranch(newBrachName)
+		err = gitClient.Branch(newBrachName)
 		if err != nil {
 			return err
 		}
@@ -115,13 +115,13 @@ var killCmd = &cobra.Command{
 		util.Printfln(os.Stdout, "commited %s", hash)
 
 		if viper.GetBool("send-pr") {
-			err := gitClient.Push()
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+			defer cancel()
+
+			err := gitClient.Push(ctx)
 			if err != nil {
 				return err
 			}
-
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-			defer cancel()
 
 			gitHub, err := newGitHubClient()
 			if err != nil {

@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 )
 
 type GitClient struct {
@@ -31,7 +30,7 @@ func (c GitClient) Origin() (string, error) {
 	return origin.Config().URLs[0], nil
 }
 
-func (c GitClient) CreateBranch(name string) error {
+func (c GitClient) Branch(name string) error {
 	repo, err := git.PlainOpen(c.RepoDir)
 	if err != nil {
 		return fmt.Errorf("failed to open repo: %w", err)
@@ -91,10 +90,7 @@ func (c GitClient) Commit(msg string) (string, error) {
 	return h.String(), nil
 }
 
-func (c GitClient) Push() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
-
+func (c GitClient) Push(ctx context.Context) error {
 	auth, err := gitAuth()
 	if err != nil {
 		return fmt.Errorf("failed to get auth: %w", err)
@@ -115,6 +111,10 @@ func (c GitClient) Push() error {
 	}
 
 	return nil
+}
+
+func (c GitClient) Clone(ctx context.Context, url string) error {
+	panic("not implemented")
 }
 
 func FindGitDir(dir string) (string, error) {

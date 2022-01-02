@@ -5,11 +5,15 @@ import (
 	"io"
 )
 
-type Git interface {
+type GitClient interface {
 	Clone(ctx context.Context, url string) error
-	Commit(msg string) error
+	Branch(name string) error
+	Commit(msg string) (string, error)
 	Push(ctx context.Context) error
-	PullRequest(ctx context.Context) error
+}
+
+type GitServer interface {
+	CreatePullRequest(ctx context.Context, remoteURL, fromBranch, toBranch, title, body string) (string, error)
 }
 
 type TaskRunner interface {

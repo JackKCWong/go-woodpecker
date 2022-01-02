@@ -6,8 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/JackKCWong/go-woodpecker/internal/api"
-	"github.com/JackKCWong/go-woodpecker/internal/spi"
+	"github.com/JackKCWong/go-woodpecker/api"
+	"github.com/JackKCWong/go-woodpecker/spi"
 	"io"
 	"io/ioutil"
 	"os"
@@ -34,11 +34,6 @@ func New(pom string, opts Opts) api.DependencyManager {
 		mvn:  mvn{POM: pom},
 		opts: opts,
 	}
-}
-
-func (u Runner) ContinueUpdate() bool {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (u Runner) UpdateDependency(depID string) error {
@@ -122,7 +117,7 @@ func (u Runner) DependencyTree() (api.DependencyTree, error) {
 	}
 
 	tree = parseDepTree(string(treeInBytes))
-	vr.FillIn(&tree)
+	vr.fillIn(&tree)
 
 	return tree, nil
 }

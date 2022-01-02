@@ -3,7 +3,7 @@ package maven
 import (
 	"context"
 	"encoding/json"
-	"github.com/JackKCWong/go-woodpecker/internal/api"
+	"github.com/JackKCWong/go-woodpecker/api"
 	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"

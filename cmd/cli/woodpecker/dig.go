@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/JackKCWong/go-woodpecker/internal/api"
+	"github.com/JackKCWong/go-woodpecker/api"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/gitop"
 	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
@@ -47,7 +47,7 @@ var digCmd = &cobra.Command{
 			return err
 		}
 
-		err = gitClient.CreateBranch(viper.GetString("branch-name"))
+		err = gitClient.Branch(viper.GetString("branch-name"))
 		if err != nil {
 			return fmt.Errorf("failed to create branch: %w", err)
 		}
@@ -118,7 +118,10 @@ var digCmd = &cobra.Command{
 
 		util.Printfln(os.Stdout, "committed %s", hash)
 
-		err = gitClient.Push()
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+		defer cancel()
+
+		err = gitClient.Push(ctx)
 		if err != nil {
 			return err
 		}
@@ -127,9 +130,6 @@ var digCmd = &cobra.Command{
 			BaseURL:     githubURL,
 			AccessToken: githubToken,
 		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
 
 		util.Printfln(os.Stdout, "creating pull request to %s", origin)
 		pr, err := gitHub.CreatePullRequest(ctx,

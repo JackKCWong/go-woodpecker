@@ -1,7 +1,7 @@
 package maven
 
 import (
-	"github.com/JackKCWong/go-woodpecker/internal/api"
+	"github.com/JackKCWong/go-woodpecker/api"
 	"sort"
 	"strings"
 )
@@ -32,7 +32,7 @@ func (vr *VulnerabilityReport) HighOrCritical() []Dependency {
 	return highOrCritical
 }
 
-func (vr *VulnerabilityReport) FillIn(tree *api.DependencyTree) {
+func (vr *VulnerabilityReport) fillIn(tree *api.DependencyTree) {
 	vuldb := make(map[string][]Vulnerability)
 	pdb := make(map[string]string)
 
