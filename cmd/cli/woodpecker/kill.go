@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/cmd/cli/config"
-	"github.com/JackKCWong/go-woodpecker/internal/spi/maven"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
+	"github.com/JackKCWong/go-woodpecker/spi/impl/maven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
@@ -17,7 +17,6 @@ import (
 var killCmd = &cobra.Command{
 	Use:   "kill cve_id",
 	Short: "Update dependency version until the given CVE disappears",
-	Long:  "Update dependency version until the given CVE disappears and number of critical vulnerabilities drops",
 	Args:  cobra.MinimumNArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return config.ReadConfigFile()

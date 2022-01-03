@@ -3,9 +3,9 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/JackKCWong/go-woodpecker/internal/spi/gitop"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/JackKCWong/go-woodpecker/spi"
+	"github.com/JackKCWong/go-woodpecker/spi/impl/gitcmd"
 	"github.com/JackKCWong/go-woodpecker/spi/impl/github"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/viper"
@@ -62,12 +62,12 @@ func NewGitClient() (spi.GitClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	dir, err := gitop.FindGitDir(wd)
+	dir, err := gitcmd.FindGitDir(wd)
 	if err != nil {
 		return nil, err
 	}
 
-	return &gitop.GitClient{
+	return &gitcmd.GitClient{
 		RepoDir: dir,
 	}, nil
 }

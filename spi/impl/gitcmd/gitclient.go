@@ -1,4 +1,4 @@
-package gitop
+package gitcmd
 
 import (
 	"context"

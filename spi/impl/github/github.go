@@ -3,7 +3,6 @@ package github
 import (
 	"context"
 	"fmt"
-	"github.com/JackKCWong/go-woodpecker/spi"
 	"github.com/google/go-github/v41/github"
 	"golang.org/x/oauth2"
 	"net/url"
@@ -13,30 +12,6 @@ import (
 type GitHub struct {
 	ApiURL      *url.URL
 	AccessToken string
-}
-
-func NewGitHub(apiUrl, accessToken string) (spi.GitServer, error) {
-	if apiUrl == "" {
-		return nil, fmt.Errorf("apiUrl is empty")
-	}
-
-	if !strings.HasSuffix(apiUrl, "/") {
-		apiUrl += "/"
-	}
-
-	u, err := url.Parse(apiUrl)
-	if err != nil {
-		return nil, fmt.Errorf("apiUrl is invalid: %w", err)
-	}
-
-	if accessToken == "" {
-		return nil, fmt.Errorf("accessToken is empty")
-	}
-
-	return &GitHub{
-		ApiURL:      u,
-		AccessToken: accessToken,
-	}, nil
 }
 
 func (c GitHub) CreatePullRequest(ctx context.Context,
