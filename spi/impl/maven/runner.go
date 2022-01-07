@@ -36,24 +36,26 @@ func New(pom string, opts Opts) api.DependencyManager {
 	}
 }
 
-func (u Runner) UpdateDependency(depID string) error {
+func (u Runner) UpdateDependency(dep api.DependencyTreeNode) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	var artifacts []string
-	artifacts = append(artifacts, getGroupArtifact(depID))
-
-	out, err := u.mvn.Run(ctx, "versions:use-next-releases", "-Dincludes="+strings.Join(artifacts, ","))
+	out, err := u.mvn.Run(ctx, "versions:use-next-releases", "-Dincludes="+getGroupArtifact(dep.ID))
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = io.Copy(u.opts.Output, out)
-	if err != nil {
-		return err
+	prefix := "[INFO] Updated " + fmt.Sprintf("%s:%s:%s", getGroupArtifact(dep.ID), dep.Type, dep.Version) + " to version "
+	captured := collectStdout(io.TeeReader(out, u.opts.Output), func(line string) bool {
+		return strings.HasPrefix(line, prefix)
+	})
+
+	if len(captured) == 0 {
+		return "", nil
 	}
 
-	return nil
+	newVersion := strings.Split(captured[0], " to version ")[1]
+	return strings.ReplaceAll(dep.ID, dep.Version, newVersion), nil
 }
 
 func (u Runner) Verify() (api.TestReport, error) {
@@ -61,7 +63,7 @@ func (u Runner) Verify() (api.TestReport, error) {
 	defer cancel()
 
 	stdout, err := u.mvn.Run(ctx, "verify")
-	report := collectStdout(stdout, new(testResultCollector))
+	report := collectStdout(io.TeeReader(stdout, u.opts.Output), new(testResultCollector).IsTestResult)
 
 	if err != nil {
 		return api.TestReport{
@@ -228,17 +230,15 @@ func getGroupArtifact(id string) string {
 	return split[0] + ":" + split[1]
 }
 
-type outputCollector interface {
-	Include(string) bool
-}
+type collector func(string) bool
 
-func collectStdout(stdout io.Reader, collectors ...outputCollector) []string {
+func collectStdout(stdout io.Reader, collectors ...collector) []string {
 	var out []string
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
 		for _, c := range collectors {
-			if c.Include(line) {
+			if c(line) {
 				out = append(out, line)
 				break
 			}
@@ -252,7 +252,7 @@ type testResultCollector struct {
 	started bool
 }
 
-func (c *testResultCollector) Include(line string) bool {
+func (c *testResultCollector) IsTestResult(line string) bool {
 	if strings.HasPrefix(line, "[INFO] Results:") {
 		c.started = true
 		return false

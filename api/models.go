@@ -1,7 +1,7 @@
 package api
 
 type DependencyManager interface {
-	UpdateDependency(depID string) error
+	UpdateDependency(dep DependencyTreeNode) (string, error)
 	Verify() (TestReport, error)
 	StageUpdate() error
 	DependencyTree() (DependencyTree, error)

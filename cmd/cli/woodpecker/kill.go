@@ -55,29 +55,32 @@ var killCmd = &cobra.Command{
 		}
 
 		cveID := args[0]
+
 		subtree, found := tree.FindCVE(cveID)
+		if !found {
+			return fmt.Errorf("CVE %s not found in the dependency tree", cveID)
+		}
+
 		originalPackageID := subtree.Root().ID
-		lastPackageID := originalPackageID
-		for found {
-			util.Printfln(os.Stdout, "%s found in %s, upgrading...", cveID, subtree.Root().ID)
-			err := depMgr.UpdateDependency(subtree.Root().ID)
+		newPackageID := ""
+
+		for depWithCVE, found := subtree.FindCVE(cveID); found; depWithCVE, found = subtree.FindCVE(cveID) {
+			util.Printfln(os.Stdout, "%s found in %s, upgrading...", cveID, depWithCVE.Root().ID)
+			lastPackageID := depWithCVE.Root().ID
+			newPackageID, err = depMgr.UpdateDependency(depWithCVE.Root())
 			if err != nil {
-				return fmt.Errorf("failed to update dependency %s: %w", subtree.Root().ID, err)
+				return fmt.Errorf("failed to update dependency %s: %w", depWithCVE.Root().ID, err)
+			}
+			if lastPackageID == newPackageID {
+				util.Printfln(os.Stdout, "already the latest version: %s, exiting...", newPackageID)
+				return fmt.Errorf("no version available without %s", cveID)
 			}
 
-			newTree, err := depMgr.DependencyTree()
+			util.Printfln(os.Stdout, "upgraded to %s", newPackageID)
+
+			subtree, err = depMgr.DependencyTree()
 			if err != nil {
 				return fmt.Errorf("failed to get dependency tree: %w", err)
-			}
-
-			subtree, found = newTree.FindCVE(cveID)
-			if found {
-				if lastPackageID == subtree.Root().ID {
-					util.Printfln(os.Stdout, "already the latest version: %s, exiting...", subtree.Root().ID)
-					return fmt.Errorf("no version available without %s", cveID)
-				}
-
-				lastPackageID = subtree.Root().ID
 			}
 		}
 
@@ -136,7 +139,7 @@ var killCmd = &cobra.Command{
 			pullRequestURL, err := gitHub.CreatePullRequest(ctx,
 				origin, newBrachName, "master",
 				commitMessage,
-				fmt.Sprintf("update from %s to %s, result:\n%s", originalPackageID, lastPackageID, verificationResult))
+				fmt.Sprintf("update from %s to %s, result:\n%s", originalPackageID, newPackageID, verificationResult))
 
 			if err != nil {
 				return err

@@ -1,6 +1,7 @@
 package maven
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/JackKCWong/go-woodpecker/api"
@@ -105,6 +106,24 @@ func TestRunner_DependencyTree(t *testing.T) {
 	require.Equal(t, "io.netty:netty-handler:4.1.71.Final", vulnerable.Get(0).ID)
 }
 
+func TestRunner_UpdateDependency(t *testing.T) {
+	runner := Runner{
+		POM: "pom.xml",
+		mvn: mockMvn{},
+		opts: Opts{
+			Output: os.Stdout,
+		},
+	}
+
+	newDep, err := runner.UpdateDependency(api.DependencyTreeNode{
+		ID:      "groupId:artifactId:oldVersion",
+		Raw:     "groupId:artifactId:jar:oldVersion",
+		Version: "oldVersion",
+	})
+	require.Nil(t, err)
+	require.Equal(t, "groupId:artifactId:newVersion", newDep)
+}
+
 func (m mockMvn) Wd() string {
 	wd, err := os.Getwd()
 	if err != nil {
@@ -126,6 +145,10 @@ func (m mockMvn) Run(ctx context.Context, task string, args ...string) (io.Reade
 		return strings.NewReader(""), nil
 	case "org.owasp:dependency-check-maven:aggregate":
 		return strings.NewReader(""), nil
+	case "versions:use-next-releases":
+		return bytes.NewBufferString(`
+[INFO] Updated groupId:artifactId:jar:oldVersion to version newVersion
+`), nil
 	}
 
 	panic("unexpected task")

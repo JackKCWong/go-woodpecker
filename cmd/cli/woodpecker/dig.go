@@ -68,7 +68,7 @@ var digCmd = &cobra.Command{
 		util.Printfln(os.Stdout, strings.Repeat("-", 80))
 		util.Printfln(os.Stdout, "updating dependencies %s with %d vulnerabilities", target.Root().ID, target.VulnerabilityCount())
 		util.Printfln(os.Stdout, strings.Repeat("-", 80))
-		err = depMgr.UpdateDependency(target.Root().ID)
+		_, err = depMgr.UpdateDependency(target.Root())
 		if err != nil {
 			return err
 		}
