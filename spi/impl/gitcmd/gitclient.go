@@ -42,7 +42,7 @@ func (c GitClient) Branch(name string) error {
 	}
 
 	err = wtree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.ReferenceName("refs/heads/" + name),
+		Branch: plumbing.NewBranchReferenceName(name),
 		Create: true,
 		Keep:   true,
 	})

@@ -30,7 +30,7 @@ func init() {
 	// defaults
 	viper.SetDefault("verbose", false)
 	viper.SetDefault("no-progress", false)
-	viper.SetDefault("branch-name", "woodpecker-autoupdate")
+	viper.SetDefault("branch-name", "woodpecker")
 
 	rootCmd.AddCommand(
 		vulTreeCmd,
