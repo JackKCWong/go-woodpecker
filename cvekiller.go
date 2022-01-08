@@ -3,6 +3,7 @@ package woodpecker
 import (
 	"context"
 	"fmt"
+	"github.com/JackKCWong/go-woodpecker/api"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"io/ioutil"
 	"os"
@@ -33,12 +34,12 @@ func (w Woodpecker) Kill(args []string, opts KillOpts) error {
 
 	cveID := args[0]
 
-	subtree, found := tree.FindCVE(cveID)
+	subtreeToUpdate, found := tree.FirstChildWithCVE(cveID)
 	if !found {
 		return fmt.Errorf("CVE %s not found in the dependency tree", cveID)
 	}
 
-	originalPackageID := subtree.Root().ID
+	originalPackageID := subtreeToUpdate.Root().ID
 	newPackageID := ""
 
 	newBrachName := strings.ReplaceAll(fmt.Sprintf("%s/%s/%s", opts.BranchNamePrefix, originalPackageID, cveID), ":", "/")
@@ -47,12 +48,12 @@ func (w Woodpecker) Kill(args []string, opts KillOpts) error {
 		return err
 	}
 
-	for depWithCVE, found := subtree.FindCVE(cveID); found; depWithCVE, found = subtree.FindCVE(cveID) {
-		util.Printfln(os.Stdout, "%s found in %s, upgrading...", cveID, depWithCVE.Root().ID)
-		lastPackageID := depWithCVE.Root().ID
-		newPackageID, err = w.DepMgr.UpdateDependency(depWithCVE.Root())
+	for subtreeToUpdate, found = subtreeToUpdate.FirstChildWithCVE(cveID); found; subtreeToUpdate, found = subtreeToUpdate.FirstChildWithCVE(cveID) {
+		util.Printfln(os.Stdout, "%s found in %s, upgrading...", cveID, subtreeToUpdate.Root().ID)
+		lastPackageID := subtreeToUpdate.Root().ID
+		newPackageID, err = w.DepMgr.UpdateDependency(subtreeToUpdate.Root())
 		if err != nil {
-			return fmt.Errorf("failed to update dependency %s: %w", depWithCVE.Root().ID, err)
+			return fmt.Errorf("failed to update dependency %s: %w", subtreeToUpdate.Root().ID, err)
 		}
 		if lastPackageID == newPackageID {
 			util.Printfln(os.Stdout, "already the latest version: %s, exiting...", newPackageID)
@@ -61,7 +62,7 @@ func (w Woodpecker) Kill(args []string, opts KillOpts) error {
 
 		util.Printfln(os.Stdout, "upgraded to %s", newPackageID)
 
-		subtree, err = w.DepMgr.DependencyTree()
+		subtreeToUpdate, err = w.DepMgr.DependencyTree()
 		if err != nil {
 			return fmt.Errorf("failed to get dependency tree: %w", err)
 		}
@@ -80,7 +81,7 @@ func (w Woodpecker) Kill(args []string, opts KillOpts) error {
 
 	var verificationResult string
 	if result.Summary == "" {
-		verificationResult = "verification passed but you don't seem to have any test! good luck!"
+		verificationResult = "build passed but you don't seem to have any test! good luck!"
 		util.Printfln(os.Stdout, verificationResult)
 	} else {
 		verificationResult = fmt.Sprintf("verification passed: \n%s", result.Summary)
@@ -114,10 +115,20 @@ func (w Woodpecker) Kill(args []string, opts KillOpts) error {
 			return err
 		}
 
+		prComment := fmt.Sprintf("### updated to %s, verification result:\n> %s", newPackageID, verificationResult)
+		subtreeToUpdate, found := tree.FirstChildWithCVE(cveID)
+		if found {
+			cve, _ := subtreeToUpdate.FindCVE(cveID)
+			prComment = fmt.Sprintf("%s\n\n### CVE details\n%s\n>%s",
+				prComment, formatCVESummary(cve), cve.Description)
+		} else {
+			util.Printfln(os.Stderr, "weired...CVE %s not found in the original dependency tree...", cveID)
+		}
+
 		pullRequestURL, err := w.GitServer.CreatePullRequest(ctx,
 			origin, newBrachName, "master",
 			commitMessage,
-			fmt.Sprintf("update from %s to %s, result:\n%s", originalPackageID, newPackageID, verificationResult))
+			prComment)
 
 		if err != nil {
 			return err
@@ -127,4 +138,8 @@ func (w Woodpecker) Kill(args []string, opts KillOpts) error {
 	}
 
 	return nil
+}
+
+func formatCVESummary(cve api.Vulnerability) string {
+	return fmt.Sprintf("[%s](%s) - %s %.1f/%.1f", cve.ID, cve.CVEUrl, cve.Severity, cve.CVSSv2Score, cve.CVSSv3Score)
 }
