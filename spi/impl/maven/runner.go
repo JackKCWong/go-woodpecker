@@ -16,9 +16,9 @@ import (
 	"time"
 )
 
-type Runner struct {
+type Maven struct {
 	POM  string
-	mvn  spi.TaskRunner
+	mvn  spi.BuildTaskRunner
 	opts Opts
 }
 
@@ -28,24 +28,24 @@ type Opts struct {
 }
 
 func New(pom string, opts Opts) api.DependencyManager {
-	return &Runner{
+	return &Maven{
 		POM:  pom,
 		mvn:  mvn{POM: pom},
 		opts: opts,
 	}
 }
 
-func (u Runner) UpdateDependency(dep api.DependencyTreeNode) (string, error) {
+func (m Maven) UpdateDependency(dep api.DependencyTreeNode) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	out, err := u.mvn.Run(ctx, "versions:use-next-releases", "-Dincludes="+getGroupArtifact(dep.ID))
+	out, err := m.mvn.Run(ctx, "versions:use-next-releases", "-Dincludes="+getGroupArtifact(dep.ID))
 	if err != nil {
 		return "", err
 	}
 
 	prefix := "[INFO] Updated " + fmt.Sprintf("%s:%s:%s", getGroupArtifact(dep.ID), dep.Type, dep.Version) + " to version "
-	captured := collectStdout(io.TeeReader(out, u.opts.Output), func(line string) bool {
+	captured := collectStdout(io.TeeReader(out, m.opts.Output), func(line string) bool {
 		return strings.HasPrefix(line, prefix)
 	})
 
@@ -57,12 +57,12 @@ func (u Runner) UpdateDependency(dep api.DependencyTreeNode) (string, error) {
 	return strings.ReplaceAll(dep.ID, dep.Version, newVersion), nil
 }
 
-func (u Runner) Verify() (api.TestReport, error) {
+func (m Maven) Verify() (api.TestReport, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
-	stdout, err := u.mvn.Run(ctx, "verify")
-	report := collectStdout(io.TeeReader(stdout, u.opts.Output), new(testResultCollector).IsTestResult)
+	stdout, err := m.mvn.Run(ctx, "verify")
+	report := collectStdout(io.TeeReader(stdout, m.opts.Output), new(testResultCollector).IsTestResult)
 
 	if err != nil {
 		return api.TestReport{
@@ -77,42 +77,42 @@ func (u Runner) Verify() (api.TestReport, error) {
 	}, nil
 }
 
-func (u Runner) DependencyTree() (api.DependencyTree, error) {
+func (m Maven) DependencyTree() (api.DependencyTree, error) {
 	var tree api.DependencyTree
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	props := make([]string, 0, len(u.opts.DependencyCheckProps)+1)
+	props := make([]string, 0, len(m.opts.DependencyCheckProps)+1)
 	props = append(props, "-Dformats=json,html")
-	for _, v := range u.opts.DependencyCheckProps {
+	for _, v := range m.opts.DependencyCheckProps {
 		props = append(props, fmt.Sprintf("-D%s", v))
 	}
 
-	stdout, err := u.mvn.Run(ctx, "org.owasp:dependency-check-maven:aggregate", props...)
+	stdout, err := m.mvn.Run(ctx, "org.owasp:dependency-check-maven:aggregate", props...)
 	if err != nil {
 		return tree, err
 	}
 
-	_, _ = io.Copy(u.opts.Output, stdout)
+	_, _ = io.Copy(m.opts.Output, stdout)
 
-	tempFile, err := ioutil.TempFile(path.Join(u.mvn.Wd(), "target"), "woodpecker-maven-dependency-tree")
+	tempFile, err := ioutil.TempFile(path.Join(m.mvn.Wd(), "target"), "woodpecker-maven-dependency-tree")
 	if err != nil {
 		return tree, err
 	}
 
-	stdout, err = u.mvn.Run(ctx, "dependency:tree", "-DoutputFile="+tempFile.Name(), "-DappendOutput=true")
+	stdout, err = m.mvn.Run(ctx, "dependency:tree", "-DoutputFile="+tempFile.Name(), "-DappendOutput=true")
 	if err != nil {
 		return tree, err
 	}
 
-	_, _ = io.Copy(u.opts.Output, stdout)
+	_, _ = io.Copy(m.opts.Output, stdout)
 
 	treeInBytes, err := ioutil.ReadFile(tempFile.Name())
 	if err != nil {
 		return tree, err
 	}
 
-	vr, err := u.loadVulnerabilityReport()
+	vr, err := m.loadVulnerabilityReport()
 	if err != nil {
 		return tree, err
 	}
@@ -123,8 +123,8 @@ func (u Runner) DependencyTree() (api.DependencyTree, error) {
 	return tree, nil
 }
 
-func (u Runner) loadVulnerabilityReport() (*VulnerabilityReport, error) {
-	report, err := ioutil.ReadFile(u.mvn.Wd() + "/target/dependency-check-report.json")
+func (m Maven) loadVulnerabilityReport() (*VulnerabilityReport, error) {
+	report, err := ioutil.ReadFile(m.mvn.Wd() + "/target/dependency-check-report.json")
 	if err != nil {
 		return nil, err
 	}
@@ -138,16 +138,16 @@ func (u Runner) loadVulnerabilityReport() (*VulnerabilityReport, error) {
 	return vr, nil
 }
 
-func (u Runner) StageUpdate() error {
+func (m Maven) StageUpdate() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	stdout, err := u.mvn.Run(ctx, "versions:commit")
+	stdout, err := m.mvn.Run(ctx, "versions:commit")
 	if err != nil {
 		return err
 	}
 
-	_, _ = io.Copy(u.opts.Output, stdout)
+	_, _ = io.Copy(m.opts.Output, stdout)
 
 	return nil
 }

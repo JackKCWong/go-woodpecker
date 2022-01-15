@@ -102,6 +102,21 @@ func (t DependencyTree) Subtree(i int, rootID string) (DependencyTree, bool) {
 	return DependencyTree{}, false
 }
 
+func (t DependencyTree) CriticalOrHigh() (Vulnerability, bool) {
+	for i, n := range t.Nodes() {
+		if n.Depth == 1 {
+			subtree, _ := t.Subtree(i, n.ID)
+			for _, v := range subtree.AllVulnerabilities() {
+				if v.Severity == "CRITICAL" || v.Severity == "HIGH" {
+					return v, true
+				}
+			}
+		}
+	}
+
+	return Vulnerability{}, false
+}
+
 // MostVulnerable returns the subtree with the highest CVSS score, if any
 func (t DependencyTree) MostVulnerable() (DependencyTree, bool) {
 	subTrees := make(map[string][]DependencyTreeNode)

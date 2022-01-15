@@ -85,7 +85,7 @@ type mockMvn struct {
 }
 
 func TestRunner_DependencyTree(t *testing.T) {
-	runner := Runner{
+	maven := Maven{
 		POM: "pom.xml",
 		mvn: mockMvn{},
 		opts: Opts{
@@ -93,21 +93,20 @@ func TestRunner_DependencyTree(t *testing.T) {
 		},
 	}
 
-	depTree, err := runner.DependencyTree()
+	depTree, err := maven.DependencyTree()
 	require.Nil(t, err)
 
 	tcnative, found := depTree.Find("io.netty:netty-tcnative-classes:2.0.46.Final")
 	require.True(t, found)
 	require.Greater(t, len(tcnative.Vulnerabilities), 0)
 
-	vulnerable, found := depTree.MostVulnerable()
+	vulnerable, found := depTree.CriticalOrHigh()
 	require.True(t, found)
-	require.Len(t, vulnerable.Nodes(), 2)
-	require.Equal(t, "io.netty:netty-handler:4.1.71.Final", vulnerable.Get(0).ID)
+	require.Equal(t, "CVE-2019-20444", vulnerable.ID)
 }
 
 func TestRunner_UpdateDependency(t *testing.T) {
-	runner := Runner{
+	runner := Maven{
 		POM: "pom.xml",
 		mvn: mockMvn{},
 		opts: Opts{
@@ -133,7 +132,7 @@ func (m mockMvn) Wd() string {
 	return path.Join(wd, "testdata")
 }
 
-func (m mockMvn) Run(ctx context.Context, task string, args ...string) (io.Reader, error) {
+func (m mockMvn) Run(_ context.Context, task string, args ...string) (io.Reader, error) {
 	switch task {
 	case "dependency:tree":
 		outputFile := strings.Split(args[0], "=")[1]

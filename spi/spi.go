@@ -17,7 +17,7 @@ type GitServer interface {
 	CreatePullRequest(ctx context.Context, remoteURL, fromBranch, toBranch, title, body string) (string, error)
 }
 
-type TaskRunner interface {
+type BuildTaskRunner interface {
 	Run(ctx context.Context, task string, args ...string) (io.Reader, error)
 	Wd() string
 }

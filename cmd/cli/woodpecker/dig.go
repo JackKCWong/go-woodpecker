@@ -1,39 +1,36 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"github.com/JackKCWong/go-woodpecker/api"
+	"github.com/JackKCWong/go-woodpecker"
 	"github.com/JackKCWong/go-woodpecker/cmd/cli/config"
-	"github.com/JackKCWong/go-woodpecker/internal/util"
 	"github.com/JackKCWong/go-woodpecker/spi/impl/maven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
-	"strings"
-	"time"
 )
 
 var digCmd = &cobra.Command{
-	Use:   "dig [package_id]",
-	Short: "dig out a dependency which can be upgraded to reduce vulnerabilities. package_id is in the format of groupId:artifactId:version",
+	Use:   "dig",
+	Short: "dig out a dependency with Critical or High CVE and try to fix it",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		return config.ReadConfigFile()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		gitHub, err := config.NewGitHub()
-		if err != nil {
-			return err
-		}
-
 		gitClient, err := config.NewGitClient()
 		if err != nil {
 			return err
 		}
 
-		err = gitClient.Branch(viper.GetString("branch-name"))
+		gitHub, err := config.NewGitHub()
 		if err != nil {
-			return fmt.Errorf("failed to create branch: %w", err)
+			return err
+		}
+
+		opts := woodpecker.KillOpts{
+			Opts: woodpecker.Opts{
+				BranchNamePrefix: viper.GetString("branch-name"),
+			},
+			SendPR: viper.GetBool("send-pr"),
 		}
 
 		depMgr := maven.New(
@@ -44,82 +41,23 @@ var digCmd = &cobra.Command{
 			},
 		)
 
+		wp := woodpecker.Woodpecker{
+			GitClient: gitClient,
+			GitServer: gitHub,
+			DepMgr:    depMgr,
+		}
+
 		depTree, err := depMgr.DependencyTree()
 		if err != nil {
 			return err
 		}
 
-		var target api.DependencyTree
-		var found bool
-		if len(args) > 0 {
-			packageID := args[0]
-			target, found = depTree.Subtree(0, packageID)
-			if !found {
-				return fmt.Errorf("package %s not found", packageID)
-			}
-		} else {
-			target, found = depTree.MostVulnerable()
-			if !found {
-				fmt.Println("Congratulations! Your project has no CVE.")
-				return nil
-			}
+		target, found := depTree.CriticalOrHigh()
+		if !found {
+			fmt.Println("Congratulations! Your project has no Critical or High CVE.")
+			return nil
 		}
 
-		util.Printfln(os.Stdout, strings.Repeat("-", 80))
-		util.Printfln(os.Stdout, "updating dependencies %s with %d vulnerabilities", target.Root().ID, target.VulnerabilityCount())
-		util.Printfln(os.Stdout, strings.Repeat("-", 80))
-		_, err = depMgr.UpdateDependency(target.Root())
-		if err != nil {
-			return err
-		}
-
-		r, err := depMgr.Verify()
-		if err != nil {
-			return err
-		}
-
-		if !r.Passed {
-			return fmt.Errorf("verification failed: \n%s", r.Summary)
-		}
-
-		err = depMgr.StageUpdate()
-		if err != nil {
-			return err
-		}
-
-		util.Printfln(os.Stdout, "opening git repo")
-
-		origin, err := gitClient.Origin()
-		if err != nil {
-			return err
-		}
-
-		util.Printfln(os.Stdout, "pushing changes to  %s", origin)
-		hash, err := gitClient.Commit("update " + target.Root().ID)
-		if err != nil {
-			return err
-		}
-
-		util.Printfln(os.Stdout, "committed %s", hash)
-
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-		defer cancel()
-
-		err = gitClient.Push(ctx)
-		if err != nil {
-			return err
-		}
-
-		util.Printfln(os.Stdout, "creating pull request to %s", origin)
-		pr, err := gitHub.CreatePullRequest(ctx,
-			origin, viper.GetString("branch-name"), "master",
-			"upgrading "+target.Root().ID, r.Summary)
-
-		if err != nil {
-			return err
-		}
-
-		util.Printfln(os.Stdout, "pull request created: %s", pr)
-		return nil
+		return wp.Kill([]string{target.ID}, opts)
 	},
 }
