@@ -34,7 +34,7 @@ func init() {
 
 	rootCmd.AddCommand(
 		vulTreeCmd,
-		//digCmd,
+		digCmd,
 		killCmd,
 	)
 }

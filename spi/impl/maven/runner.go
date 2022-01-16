@@ -10,6 +10,7 @@ import (
 	"github.com/JackKCWong/go-woodpecker/spi"
 	"io"
 	"io/ioutil"
+	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -95,7 +96,12 @@ func (m Maven) DependencyTree() (api.DependencyTree, error) {
 
 	_, _ = io.Copy(m.opts.Output, stdout)
 
-	tempFile, err := ioutil.TempFile(path.Join(m.mvn.Wd(), "target"), "woodpecker-maven-dependency-tree")
+	wd, err := os.Getwd()
+	if err != nil {
+		return api.DependencyTree{}, err
+	}
+
+	tempFile, err := ioutil.TempFile(path.Join(wd, "target"), "woodpecker-maven-dependency-tree")
 	if err != nil {
 		return tree, err
 	}
