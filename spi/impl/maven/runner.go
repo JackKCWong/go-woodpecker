@@ -158,6 +158,19 @@ func (m Maven) StageUpdate() error {
 	return nil
 }
 
+func (m Maven) IsMultiModules() (bool, error) {
+	pomXml, err := ioutil.ReadFile(m.POM)
+	if err != nil {
+		return false, fmt.Errorf("failed to read pom.xml in current wd: %w", err)
+	}
+
+	if strings.Contains(string(pomXml), "<modules>") {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
+
 func parseDepTree(content string) api.DependencyTree {
 	prefixPattern := regexp.MustCompile("^\\W+")
 	scanner := bufio.NewScanner(bytes.NewBufferString(content))

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/api"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -17,13 +16,9 @@ type KillOpts struct {
 }
 
 func (w Woodpecker) Kill(args []string, opts KillOpts) error {
-	pomPath := "pom.xml"
-	pomXml, err := ioutil.ReadFile(pomPath)
-	if err != nil {
-		return fmt.Errorf("failed to read pom.xml in current wd: %w", err)
-	}
-
-	if strings.Contains(string(pomXml), "<packaging>pom</packaging>") {
+	if multiModules, err := w.DepMgr.IsMultiModules(); err != nil {
+		return fmt.Errorf("failed to check if multi-modules: %w", err)
+	} else if multiModules {
 		return fmt.Errorf("kill does not work on the parent project. Please run it on the child project")
 	}
 

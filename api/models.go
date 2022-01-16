@@ -5,6 +5,7 @@ type DependencyManager interface {
 	Verify() (TestReport, error)
 	StageUpdate() error
 	DependencyTree() (DependencyTree, error)
+	IsMultiModules() (bool, error)
 }
 
 type TestReport struct {
