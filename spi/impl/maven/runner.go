@@ -10,7 +10,6 @@ import (
 	"github.com/JackKCWong/go-woodpecker/spi"
 	"io"
 	"io/ioutil"
-	"os"
 	"path"
 	"regexp"
 	"strings"
@@ -34,6 +33,20 @@ func New(pom string, opts Opts) api.DependencyManager {
 		mvn:  mvn{POM: pom},
 		opts: opts,
 	}
+}
+
+func (m Maven) getSubModule(moduleGAV string) string {
+	parts := strings.Split(moduleGAV, ":")
+	return path.Join(m.mvn.Wd(), parts[1], "pom.xml")
+}
+
+func (m Maven) SubModule(moduleGAV string) (api.DependencyManager, error) {
+	pom := m.getSubModule(moduleGAV)
+	return &Maven{
+		POM:  pom,
+		mvn:  mvn{POM: pom},
+		opts: m.opts,
+	}, nil
 }
 
 func (m Maven) UpdateDependency(dep api.DependencyTreeNode) (string, error) {
@@ -96,12 +109,7 @@ func (m Maven) DependencyTree() (api.DependencyTree, error) {
 
 	_, _ = io.Copy(m.opts.Output, stdout)
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return api.DependencyTree{}, err
-	}
-
-	tempFile, err := ioutil.TempFile(path.Join(wd, "target"), "woodpecker-maven-dependency-tree")
+	tempFile, err := ioutil.TempFile(path.Join(m.mvn.Wd(), "target"), "woodpecker-maven-dependency-tree")
 	if err != nil {
 		return tree, err
 	}

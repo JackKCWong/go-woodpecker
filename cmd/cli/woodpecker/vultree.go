@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"io"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"text/tabwriter"
@@ -35,7 +36,12 @@ var vulTreeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		summaryMode, _ := cmd.Flags().GetBool("summary")
 
-		depMgr := maven.New("pom.xml",
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
+		depMgr := maven.New(path.Join(wd, "pom.xml"),
 			maven.Opts{
 				Output:               config.NewProgressOutput(),
 				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),

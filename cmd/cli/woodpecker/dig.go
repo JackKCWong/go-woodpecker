@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"github.com/JackKCWong/go-woodpecker"
 	"github.com/JackKCWong/go-woodpecker/cmd/cli/config"
 	"github.com/JackKCWong/go-woodpecker/spi/impl/maven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
+	"path"
 )
 
 var digCmd = &cobra.Command{
@@ -33,8 +34,13 @@ var digCmd = &cobra.Command{
 			SendPR: viper.GetBool("send-pr"),
 		}
 
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
 		depMgr := maven.New(
-			"pom.xml",
+			path.Join(wd, "pom.xml"),
 			maven.Opts{
 				Output:               config.NewProgressOutput(),
 				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),
@@ -47,17 +53,6 @@ var digCmd = &cobra.Command{
 			DepMgr:    depMgr,
 		}
 
-		depTree, err := depMgr.DependencyTree()
-		if err != nil {
-			return err
-		}
-
-		target, found := depTree.CriticalOrHigh()
-		if !found {
-			fmt.Println("Congratulations! Your project has no Critical or High CVE.")
-			return nil
-		}
-
-		return wp.Kill([]string{target.ID}, opts)
+		return wp.Dig([]string{}, woodpecker.DigOpts{KillOpts: opts})
 	},
 }

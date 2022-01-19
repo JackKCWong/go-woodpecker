@@ -6,6 +6,7 @@ type DependencyManager interface {
 	StageUpdate() error
 	DependencyTree() (DependencyTree, error)
 	IsMultiModules() (bool, error)
+	SubModule(module string) (DependencyManager, error)
 }
 
 type TestReport struct {
@@ -103,19 +104,19 @@ func (t DependencyTree) Subtree(i int, rootID string) (DependencyTree, bool) {
 	return DependencyTree{}, false
 }
 
-func (t DependencyTree) CriticalOrHigh() (Vulnerability, bool) {
+func (t DependencyTree) CriticalOrHigh() (DependencyTree, Vulnerability, bool) {
 	for i, n := range t.Nodes() {
-		if n.Depth == 1 {
+		if n.Depth <= 1 {
 			subtree, _ := t.Subtree(i, n.ID)
 			for _, v := range subtree.AllVulnerabilities() {
 				if v.Severity == "CRITICAL" || v.Severity == "HIGH" {
-					return v, true
+					return subtree, v, true
 				}
 			}
 		}
 	}
 
-	return Vulnerability{}, false
+	return DependencyTree{}, Vulnerability{}, false
 }
 
 // MostVulnerable returns the subtree with the highest CVSS score, if any

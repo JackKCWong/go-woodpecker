@@ -6,6 +6,8 @@ import (
 	"github.com/JackKCWong/go-woodpecker/spi/impl/maven"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
+	"path"
 )
 
 var killCmd = &cobra.Command{
@@ -34,10 +36,15 @@ var killCmd = &cobra.Command{
 			SendPR: viper.GetBool("send-pr"),
 		}
 
+		wd, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+
 		wp := woodpecker.Woodpecker{
 			GitClient: gitClient,
 			GitServer: gitHub,
-			DepMgr: maven.New("pom.xml",
+			DepMgr: maven.New(path.Join(wd, "pom.xml"),
 				maven.Opts{
 					Output:               config.NewProgressOutput(),
 					DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),

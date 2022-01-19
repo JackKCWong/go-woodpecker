@@ -100,8 +100,9 @@ func TestRunner_DependencyTree(t *testing.T) {
 	require.True(t, found)
 	require.Greater(t, len(tcnative.Vulnerabilities), 0)
 
-	vulnerable, found := depTree.CriticalOrHigh()
+	subtree, vulnerable, found := depTree.CriticalOrHigh()
 	require.True(t, found)
+	require.Equal(t, "io.netty:netty-handler:4.1.71.Final", subtree.Root().ID)
 	require.Equal(t, "CVE-2019-20444", vulnerable.ID)
 }
 
@@ -121,6 +122,20 @@ func TestRunner_UpdateDependency(t *testing.T) {
 	})
 	require.Nil(t, err)
 	require.Equal(t, "groupId:artifactId:newVersion", newDep)
+}
+
+func TestRunner_GetSubModule(t *testing.T) {
+	m := Maven{
+		POM: "pom.xml",
+		mvn: mockMvn{},
+		opts: Opts{
+			Output: os.Stdout,
+		},
+	}
+
+	module, err := m.SubModule("hello:world:1.0")
+	require.Nil(t, err)
+	require.True(t, strings.HasSuffix(module.(*Maven).POM, "world/pom.xml"))
 }
 
 func (m mockMvn) Wd() string {
