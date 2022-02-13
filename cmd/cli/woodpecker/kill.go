@@ -18,7 +18,6 @@ var killCmd = &cobra.Command{
 		return config.ReadConfigFile()
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		gitClient, err := config.NewGitClient()
 		if err != nil {
 			return err

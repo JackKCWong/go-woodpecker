@@ -17,10 +17,15 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().Bool("no-progress", false, "suppress progress spinner")
+
+	rootCmd.AddCommand(
+		vulTreeCmd,
+		digCmd,
+		killCmd,
+	)
+
 	bindCmdOptsToViperConf(
 		rootCmd.PersistentFlags(),
 		vulTreeCmd.Flags(),
@@ -32,15 +37,6 @@ func init() {
 	viper.SetDefault("no-progress", false)
 	viper.SetDefault("branch-name", "woodpecker")
 
-	rootCmd.AddCommand(
-		vulTreeCmd,
-		digCmd,
-		killCmd,
-	)
-}
-
-func initConfig() {
-	// setup
 	viper.SetConfigName(".woodpecker")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(os.ExpandEnv("$HOME/"))

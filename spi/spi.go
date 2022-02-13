@@ -17,6 +17,14 @@ type GitServer interface {
 	CreatePullRequest(ctx context.Context, remoteURL, fromBranch, toBranch, title, body string) (string, error)
 }
 
+type PullRequest struct {
+	URL        string
+	Owner      string
+	Repo       string
+	FromBranch string
+	ToBranch   string
+}
+
 type BuildTaskRunner interface {
 	Run(ctx context.Context, task string, args ...string) (io.Reader, error)
 	Wd() string

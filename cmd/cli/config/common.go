@@ -92,8 +92,8 @@ func NewGitHub() (spi.GitServer, error) {
 		return nil, errors.New("github.access-token is not set")
 	}
 
-	return &github.GitHub{
+	return github.New(github.GitHub{
 		ApiURL:      apiURL,
 		AccessToken: accessToken,
-	}, nil
+	}), nil
 }
