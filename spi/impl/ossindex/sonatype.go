@@ -22,8 +22,18 @@ type compoentReportsRequestParam struct {
 const requestContentType = "application/vnd.ossindex.component-report-request.v1+json"
 
 func (s Sonatype) GetComponentReports(coordiantes []string) ([]api.ComponentReport, error) {
+	dedup := make(map[string]bool)
+	for _, c := range coordiantes {
+		dedup[c] = true
+	}
+
+	var dedupCoordinates []string
+	for k, _ := range dedup {
+		dedupCoordinates = append(dedupCoordinates, k)
+	}
+
 	reqParam := compoentReportsRequestParam{
-		Coordinates: coordiantes,
+		Coordinates: dedupCoordinates,
 	}
 
 	reqBody, err := json.Marshal(&reqParam)

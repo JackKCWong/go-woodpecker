@@ -171,30 +171,17 @@ func parseDepTree(content string) api.DependencyTree {
 
 	scanner.Scan()
 	proj := scanner.Text()
-	id, typ, ver, scope := parseTreeNode(proj)
-	nodes = append(nodes, api.DependencyTreeNode{
-		ID:      id,
-		Type:    typ,
-		Scope:   scope,
-		Version: ver,
-		Depth:   0,
-		Raw:     proj,
-	})
+	node := parseTreeNode2(proj)
+	nodes = append(nodes, node)
 
 	for scanner.Scan() {
 		line := scanner.Text()
 		prefix := prefixPattern.FindString(line)
 		depth := len(prefix) / 3
 		raw := string(prefixPattern.ReplaceAll([]byte(line), []byte("")))
-		id, typ, ver, scope := parseTreeNode(raw)
-		nodes = append(nodes, api.DependencyTreeNode{
-			ID:      id,
-			Type:    typ,
-			Scope:   scope,
-			Version: ver,
-			Depth:   depth,
-			Raw:     raw,
-		})
+		child := parseTreeNode2(raw)
+		child.Depth = depth
+		nodes = append(nodes, child)
 	}
 
 	return api.NewDependencyTree(nodes)
@@ -210,6 +197,25 @@ func parseTreeNode(line string) (string, string, string, string) {
 
 	return strings.Join([]string{parts[0], parts[1], parts[3]}, ":"),
 		parts[2], parts[3], scope
+}
+
+func parseTreeNode2(line string) api.DependencyTreeNode {
+	var node api.DependencyTreeNode
+	node.Raw = line
+
+	parts := strings.Split(line, ":")
+	node.Group = parts[0]
+	node.Artifact = parts[1]
+	node.Type = parts[2]
+	node.Version = parts[3]
+
+	if len(parts) > 4 {
+		node.Scope = parts[4]
+	}
+
+	node.ID = strings.Join([]string{node.Group, node.Artifact, node.Version}, ":")
+
+	return node
 }
 
 func filterVuls(vuls []Vulnerability, f func(v Vulnerability) bool) []Vulnerability {

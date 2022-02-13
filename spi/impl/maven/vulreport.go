@@ -56,11 +56,9 @@ func convertVul(vulnerabilities []Vulnerability) []api.Vulnerability {
 
 	for _, v := range vulnerabilities {
 		r = append(r, api.Vulnerability{
-			Cve:          v.Name,
-			Description:  v.Description,
-			Severity:     v.Severity,
-			NVDReference: "https://nvd.nist.gov/vuln/detail/" + v.Name,
-			CvssScore:    v.Cvssv3.BaseScore,
+			Cve:         v.Name,
+			Description: v.Description,
+			CvssScore:   v.Cvssv3.BaseScore,
 		})
 	}
 

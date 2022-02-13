@@ -1,5 +1,7 @@
 package api
 
+import "fmt"
+
 type DependencyManager interface {
 	UpdateDependency(dep DependencyTreeNode) (string, error)
 	Verify() (TestReport, error)
@@ -26,8 +28,10 @@ func NewDependencyTree(nodes []DependencyTreeNode) DependencyTree {
 type DependencyTreeNode struct {
 	ID              string
 	Type            string
-	Scope           string
+	Group           string
+	Artifact        string
 	Version         string
+	Scope           string
 	Depth           int
 	Raw             string
 	PackageUrl      string
@@ -43,8 +47,23 @@ type Vulnerability struct {
 	DisplayName        string   `json:"displayName"`
 	Description        string   `json:"description"`
 	Title              string   `json:"title"`
-	NVDReference       string
-	Severity           string
+}
+
+func (v Vulnerability) NVDUrl() string {
+	return fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.Cve)
+}
+
+func (v Vulnerability) Severity() string {
+	switch {
+	case v.CvssScore >= 9.0:
+		return "Critical"
+	case v.CvssScore >= 7.0:
+		return "High"
+	case v.CvssScore >= 4.0:
+		return "Medium"
+	default:
+		return "Low"
+	}
 }
 
 type ComponentReport struct {
@@ -119,7 +138,7 @@ func (t DependencyTree) CriticalOrHigh() (DependencyTree, Vulnerability, bool) {
 		if n.Depth <= 1 {
 			subtree, _ := t.Subtree(i, n.ID)
 			for _, v := range subtree.AllVulnerabilities() {
-				if v.Severity == "CRITICAL" || v.Severity == "HIGH" {
+				if v.Severity() == "Critical" || v.Severity() == "High" {
 					return subtree, v, true
 				}
 			}

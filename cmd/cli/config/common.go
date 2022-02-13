@@ -7,9 +7,11 @@ import (
 	"github.com/JackKCWong/go-woodpecker/spi"
 	"github.com/JackKCWong/go-woodpecker/spi/impl/gitcmd"
 	"github.com/JackKCWong/go-woodpecker/spi/impl/github"
+	"github.com/JackKCWong/go-woodpecker/spi/impl/ossindex"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/viper"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"strings"
@@ -96,4 +98,27 @@ func NewGitHub() (spi.GitServer, error) {
 		ApiURL:      apiURL,
 		AccessToken: accessToken,
 	}), nil
+}
+
+func NewOSSIndexClient() (spi.OSSIndex, error) {
+	apiUrl := viper.GetString("ossindex.api-url")
+	if apiUrl == "" {
+		return nil, errors.New("ossindex.api-url is not set")
+	}
+
+	token := viper.GetString("ossindex.token")
+	if token == "" {
+		return nil, errors.New("ossindex.token is not set")
+	}
+
+	timeout := viper.GetInt("ossindex.timeout")
+	if timeout == 0 {
+		timeout = 30
+	}
+
+	return ossindex.Sonatype{
+		APIBaseURL:   apiUrl,
+		APIBasicAuth: token,
+		HttpClient:   http.Client{Timeout: time.Duration(timeout) * time.Second},
+	}, nil
 }

@@ -9,8 +9,10 @@ type Woodpecker struct {
 	GitClient spi.GitClient
 	GitServer spi.GitServer
 	DepMgr    api.DependencyManager
+	OSSIndex  spi.OSSIndex
 }
 
 type Opts struct {
+	Verbose          bool
 	BranchNamePrefix string
 }

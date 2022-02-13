@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/JackKCWong/go-woodpecker"
 	"github.com/JackKCWong/go-woodpecker/api"
 	"github.com/JackKCWong/go-woodpecker/cmd/cli/config"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
@@ -47,7 +48,16 @@ var vulTreeCmd = &cobra.Command{
 				DependencyCheckProps: viper.GetStringSlice("maven.dependency-check"),
 			})
 
-		tree, err := depMgr.DependencyTree()
+		ossIndexClient, err := config.NewOSSIndexClient()
+		if err != nil {
+			return err
+		}
+
+		wp := woodpecker.Woodpecker{DepMgr: depMgr, OSSIndex: ossIndexClient}
+		tree, err := wp.Tree(woodpecker.TreeOpts{Opts: woodpecker.Opts{
+			Verbose: viper.GetBool("verbose"),
+		}})
+
 		if err != nil {
 			return err
 		}
@@ -130,18 +140,18 @@ func printVulnerabilities(w io.Writer, vuls []api.Vulnerability, padding string)
 	for i, v := range vuls {
 		var vColor func(...interface{}) string
 		switch {
-		case v.CVSSv2Score >= 9.0 || v.CVSSv3Score >= 9.0:
+		case v.Severity() == "Critical":
 			vColor = cCritical
-		case v.CVSSv2Score >= 7.0 || v.CVSSv3Score >= 7.0:
+		case v.Severity() == "High":
 			vColor = cHigh
-		case v.CVSSv2Score >= 4.0 || v.CVSSv3Score >= 4.0:
+		case v.Severity() == "Medium":
 			vColor = cMedium
 		default:
 			vColor = cLow
 		}
 
-		util.Printfln(tw, "%s   %d\t%s\t%s\t%.1f/%.1f\t%s", padding, i+1,
-			vColor(v.ID), vColor(v.Severity), v.CVSSv2Score, v.CVSSv3Score, v.CVEUrl)
+		util.Printfln(tw, "%s   %d\t%s\t%s\t%.1f\t%s", padding, i+1,
+			vColor(v.Cve), vColor(v.Severity()), v.CvssScore, v.NVDUrl())
 	}
 	tw.Flush()
 }

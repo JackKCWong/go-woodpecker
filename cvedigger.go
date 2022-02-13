@@ -24,7 +24,7 @@ func (w Woodpecker) Dig(args []string, opts DigOpts) error {
 		return nil
 	}
 
-	fmt.Printf("%s found in %+v\n", cve.ID, subtree.Root())
+	fmt.Printf("%s found in %+v\n", cve.Cve, subtree.Root())
 
-	return w.Kill([]string{cve.ID}, opts.KillOpts)
+	return w.Kill([]string{cve.Cve}, opts.KillOpts)
 }

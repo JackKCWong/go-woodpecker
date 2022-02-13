@@ -136,5 +136,5 @@ func (w Woodpecker) Kill(args []string, opts KillOpts) error {
 }
 
 func formatCVESummary(cve api.Vulnerability) string {
-	return fmt.Sprintf("[%s](%s) - %s %.1f/%.1f", cve.ID, cve.CVEUrl, cve.Severity, cve.CVSSv2Score, cve.CVSSv3Score)
+	return fmt.Sprintf("[%s](%s) - %s %.1f", cve.Cve, cve.NVDUrl(), cve.Severity, cve.CvssScore)
 }
