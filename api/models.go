@@ -35,13 +35,23 @@ type DependencyTreeNode struct {
 }
 
 type Vulnerability struct {
-	ID          string
-	Description string
-	Source      string
-	Severity    string
-	CVEUrl      string
-	CVSSv2Score float64
-	CVSSv3Score float64
+	Reference          string   `json:"reference"`
+	CvssVector         string   `json:"cvssVector"`
+	ExternalReferences []string `json:"externalReferences"`
+	Cve                string   `json:"cve"`
+	CvssScore          float64  `json:"cvssScore"`
+	DisplayName        string   `json:"displayName"`
+	Description        string   `json:"description"`
+	Title              string   `json:"title"`
+	NVDReference       string
+	Severity           string
+}
+
+type ComponentReport struct {
+	Reference       string          `json:"reference"`
+	Coordinates     string          `json:"coordinates"`
+	Description     string          `json:"description"`
+	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
 }
 
 func (t DependencyTree) Nodes() []DependencyTreeNode {
@@ -136,7 +146,7 @@ func (t DependencyTree) MostVulnerable() (DependencyTree, bool) {
 		s := 0.0
 		for _, n := range nodes {
 			for _, v := range n.Vulnerabilities {
-				s += v.CVSSv3Score + v.CVSSv2Score
+				s += v.CvssScore
 			}
 		}
 
@@ -178,7 +188,7 @@ func (t DependencyTree) FirstChildWithCVE(cveID string) (DependencyTree, bool) {
 		if n.Depth == 1 {
 			subtree, _ := t.Subtree(i, n.ID)
 			for _, v := range subtree.AllVulnerabilities() {
-				if v.ID == cveID {
+				if v.Cve == cveID {
 					return subtree, true
 				}
 			}
@@ -191,7 +201,7 @@ func (t DependencyTree) FirstChildWithCVE(cveID string) (DependencyTree, bool) {
 func (t DependencyTree) FindCVE(cveID string) (Vulnerability, bool) {
 	for _, n := range t.Nodes() {
 		for _, v := range n.Vulnerabilities {
-			if v.ID == cveID {
+			if v.Cve == cveID {
 				return v, true
 			}
 		}

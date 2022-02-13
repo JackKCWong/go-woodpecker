@@ -96,25 +96,12 @@ func (m Maven) DependencyTree() (api.DependencyTree, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	props := make([]string, 0, len(m.opts.DependencyCheckProps)+1)
-	props = append(props, "-Dformats=json,html")
-	for _, v := range m.opts.DependencyCheckProps {
-		props = append(props, fmt.Sprintf("-D%s", v))
-	}
-
-	stdout, err := m.mvn.Run(ctx, "org.owasp:dependency-check-maven:aggregate", props...)
-	if err != nil {
-		return tree, err
-	}
-
-	_, _ = io.Copy(m.opts.Output, stdout)
-
 	tempFile, err := ioutil.TempFile(path.Join(m.mvn.Wd(), "target"), "woodpecker-maven-dependency-tree")
 	if err != nil {
 		return tree, err
 	}
 
-	stdout, err = m.mvn.Run(ctx, "dependency:tree", "-DoutputFile="+tempFile.Name(), "-DappendOutput=true")
+	stdout, err := m.mvn.Run(ctx, "dependency:tree", "-DoutputFile="+tempFile.Name(), "-DappendOutput=true")
 	if err != nil {
 		return tree, err
 	}
@@ -126,13 +113,11 @@ func (m Maven) DependencyTree() (api.DependencyTree, error) {
 		return tree, err
 	}
 
-	vr, err := m.loadVulnerabilityReport()
 	if err != nil {
 		return tree, err
 	}
 
 	tree = parseDepTree(string(treeInBytes))
-	vr.fillIn(&tree)
 
 	return tree, nil
 }

@@ -98,12 +98,7 @@ func TestRunner_DependencyTree(t *testing.T) {
 
 	tcnative, found := depTree.Find("io.netty:netty-tcnative-classes:2.0.46.Final")
 	require.True(t, found)
-	require.Greater(t, len(tcnative.Vulnerabilities), 0)
-
-	subtree, vulnerable, found := depTree.CriticalOrHigh()
-	require.True(t, found)
-	require.Equal(t, "io.netty:netty-handler:4.1.71.Final", subtree.Root().ID)
-	require.Equal(t, "CVE-2019-20444", vulnerable.ID)
+	require.Equal(t, tcnative.ID, "")
 }
 
 func TestRunner_UpdateDependency(t *testing.T) {

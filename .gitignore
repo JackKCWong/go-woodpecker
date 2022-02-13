@@ -2,3 +2,4 @@
 *.iml
 reset-repo.sh
 **/woodpecker-maven-dependency-tree*
+**/*.private.env.json

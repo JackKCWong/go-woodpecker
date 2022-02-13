@@ -2,6 +2,7 @@ package spi
 
 import (
 	"context"
+	"github.com/JackKCWong/go-woodpecker/api"
 	"io"
 )
 
@@ -15,6 +16,10 @@ type GitClient interface {
 
 type GitServer interface {
 	CreatePullRequest(ctx context.Context, remoteURL, fromBranch, toBranch, title, body string) (string, error)
+}
+
+type OSSIndex interface {
+	GetComponentReports(coordiantes []string) ([]api.ComponentReport, error)
 }
 
 type PullRequest struct {

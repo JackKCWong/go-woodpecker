@@ -56,18 +56,16 @@ func convertVul(vulnerabilities []Vulnerability) []api.Vulnerability {
 
 	for _, v := range vulnerabilities {
 		r = append(r, api.Vulnerability{
-			ID:          v.Name,
-			Description: v.Description,
-			Source:      v.Source,
-			Severity:    v.Severity,
-			CVEUrl:      "https://nvd.nist.gov/vuln/detail/" + v.Name,
-			CVSSv2Score: v.Cvssv2.Score,
-			CVSSv3Score: v.Cvssv3.BaseScore,
+			Cve:          v.Name,
+			Description:  v.Description,
+			Severity:     v.Severity,
+			NVDReference: "https://nvd.nist.gov/vuln/detail/" + v.Name,
+			CvssScore:    v.Cvssv3.BaseScore,
 		})
 	}
 
 	sort.SliceStable(r, func(i, j int) bool {
-		return r[i].CVSSv3Score > r[j].CVSSv3Score
+		return r[i].CvssScore > r[j].CvssScore
 	})
 
 	return r
