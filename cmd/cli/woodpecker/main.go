@@ -10,10 +10,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "woodpecker",
-	Short:         "A collections of tools to help developer to deal with vulnerabilities",
-	SilenceUsage:  true,
-	SilenceErrors: true,
+	Use:          "woodpecker",
+	Short:        "A collections of tools to help developer to deal with vulnerabilities",
+	SilenceUsage: true,
+	//SilenceErrors: true,
 }
 
 func init() {
@@ -24,6 +24,7 @@ func init() {
 		vulTreeCmd,
 		digCmd,
 		killCmd,
+		configCmd,
 	)
 
 	bindCmdOptsToViperConf(

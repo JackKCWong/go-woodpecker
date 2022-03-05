@@ -1,6 +1,7 @@
 package config
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 	"github.com/JackKCWong/go-woodpecker/internal/util"
@@ -17,6 +18,9 @@ import (
 	"strings"
 	"time"
 )
+
+//go:embed template.yaml
+var YamlTemplate embed.FS
 
 func NewProgressOutput() io.WriteCloser {
 	var progressOut io.WriteCloser
@@ -48,8 +52,8 @@ func NewProgressOutput() io.WriteCloser {
 func ReadConfigFile() error {
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error
-			util.Printfln(os.Stdout, "config not found, continue...")
+			// Config file not found
+			return fmt.Errorf("%s/.woodpecker.yaml not found, use `woodpecker config` to show you how to config", os.Getenv("HOME"))
 		} else {
 			// Config file was found but another error was produced
 			return fmt.Errorf("failed to read config file: %w", err)

@@ -1,6 +1,9 @@
 package util
 
-import "io"
+import (
+	"io"
+	"os"
+)
 
 type multiWriteCloser struct {
 	writers []io.WriteCloser
@@ -44,4 +47,18 @@ func (d discardWriteCloser) Write(p []byte) (n int, err error) {
 
 func (d discardWriteCloser) Close() error {
 	return nil
+}
+
+func ReadFile(path string) (string, error) {
+	fd, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+
+	content, err := io.ReadAll(fd)
+	if err != nil {
+		return "", err
+	}
+
+	return string(content), err
 }

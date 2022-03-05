@@ -1,0 +1,15 @@
+#
+# this is a template, fill in the blanks below
+#
+verbose: false #optional, default false
+
+ossindex:                           # used to retrieve vulnerabilities
+  api-url: "https://ossindex.sonatype.org/api/v3" # can be your private nexus iq server
+  token:                            #base64 encoded user:password
+
+github:                             # optional, only used when submit PR
+  api-url: https://api.github.com/
+  token:                            # base64 encoded token
+
+maven:
+  bin:                              # optional, /path/to/mvn
