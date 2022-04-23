@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/fatih/color v1.13.0
-	github.com/go-cmd/cmd v1.3.1
+	github.com/go-cmd/cmd v1.4.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/google/go-github/v41 v41.0.0
 	github.com/schollz/progressbar/v3 v3.8.3
